@@ -75,6 +75,8 @@ export default function LoginComponent() {
     try {
       const response = await loginHandler(formData.username, formData.password);
       console.log('Login successful:', response);
+      localStorage.setItem("token", response.result.accessToken)
+      setTokenCookie(response.result.accessToken);
       router.push(callbackUrl); // Redirect to callback URL after successful login
     } catch (error) {
       setErrors(prev => ({
@@ -85,6 +87,10 @@ export default function LoginComponent() {
     } finally {
       setIsLoading(false);
     }
+  };
+  const setTokenCookie = (token: string) => {
+      // max-age: 7 ngày, path=/, SameSite=Lax
+      document.cookie = `token=${token}; max-age=${60 * 60 * 24 * 7}; path=/; samesite=lax`;
   };
 
   return (

@@ -10,12 +10,25 @@ const axiosClient = axios.create({
   withCredentials: true, 
 });
 
+axiosClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token"); // lấy token từ localStorage
+    if (token) {
+      config.headers.Authorization = `${token}`; // gắn token vào header
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 
 // Xử lý lỗi response (tuỳ chỉnh)
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    console.log(error)
+    if (error.status === 401) {
+      window.location.href ="/login"
       console.warn("Token hết hạn hoặc không hợp lệ");
     }
     return Promise.reject(error);

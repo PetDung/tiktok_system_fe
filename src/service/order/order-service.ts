@@ -1,0 +1,46 @@
+
+import axios from 'axios';
+import axiosClient from '@/lib/axiosClient';
+import { ApiResponse, AuthError, OrderListResponse } from '../types/ApiResponse';
+
+export type GetOrderParam = {
+    shopId: string;
+    nextPageToken?: string;
+    status? : string;
+    shipping? : string;
+    orderId? : string;
+}
+
+
+
+export const getOrderInShop = async (param : GetOrderParam) => {
+  try {
+    const response = await axiosClient.post<OrderListResponse>(
+      `/order/list`,
+      {},
+      {
+        params: {
+          shop_id: param.shopId,
+          next_page_token: param.nextPageToken,
+          order_status : param.status,
+          shipping_type: param.shipping,
+          order_id : param.orderId,
+        },
+      }
+    );
+    if (response.data.code === 1000) {
+      return response.data;
+    }
+
+    throw new AuthError(500, "Invalid response from server");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const serverError = error.response?.data as ApiResponse<any>;
+      throw new AuthError(
+        serverError.code || 500,
+        serverError.message || "Login failed. Please try again."
+      );
+    }
+    throw new AuthError(500, "An unexpected error occurred. Please try again.");
+  }
+}

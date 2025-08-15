@@ -1,14 +1,7 @@
 import axiosClient from '@/lib/axiosClient';
 import axios from 'axios';
-import {ApiResponse, UserLoginResponse } from '../types/ApiResponse';
+import {ApiResponse, AuthError, UserLoginResponse } from '../types/ApiResponse';
 
-
-export class AuthError extends Error {
-  constructor(public code: number, message: string) {
-    super(message);
-    this.name = 'AuthError';
-  }
-}
 
 export const loginHandler = async (
   username: string,

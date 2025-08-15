@@ -1,10 +1,11 @@
 import { useState } from "react";
-
+import { useRouter } from "next/navigation";
 export interface MenuItem {
   id: number;
   title: string;
   icon?: React.ReactNode;
   children?: MenuItem[];
+  hfref?: string; // Optional href for direct navigation
 }
 
 export function Menu({ items, collapsed }: { items: MenuItem[]; collapsed: boolean }) {
@@ -18,12 +19,26 @@ export function Menu({ items, collapsed }: { items: MenuItem[]; collapsed: boole
 }
 
 function MenuItemComponent({ item, collapsed }: { item: MenuItem; collapsed: boolean }) {
+
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+
+  const handleClick = (item: MenuItem) => {
+    if( item.children) {
+      setOpen(!open);
+    } else {
+      if(item.hfref){
+        router.push(item.hfref);
+      }
+    }
+  };
+
+
 
   return (
     <li>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => handleClick(item)}
         className="flex items-center w-full px-2 py-2 rounded hover:bg-gray-700"
       >
         {/* ICON */}
