@@ -7,20 +7,14 @@ export type ShopTableProps = {
 };
 
 export default function ShopTable({ data, hanlderClick }: ShopTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
-
-  const totalPages = Math.ceil(data.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = data.slice(startIndex, startIndex + pageSize);
 
   return (
-    <div className="p-4 bg-white rounded-xl shadow-lg min-h-[80vh]">
+    <div className="p-4 bg-white rounded-xl shadow-lg">
       <h2 className="text-lg font-bold mb-4">Danh sách Shop</h2>
 
-      <div className="overflow-x-auto">
+      <div className="relative h-[80vh] overflow-y-auto">
         <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 text-left sticky top-0 z-10">
             <tr>
               <th className="px-4 py-2 border-b text-left">ID Shop</th>
               <th className="px-4 py-2 border-b text-left">TikTok Shop</th>
@@ -30,8 +24,8 @@ export default function ShopTable({ data, hanlderClick }: ShopTableProps) {
             </tr>
           </thead>
           <tbody>
-            {paginatedData.length > 0 ? (
-              paginatedData.map((shop) => (
+            {data.length > 0 ? (
+              data.map((shop) => (
                 <tr
                   key={shop.id}
                   className="hover:bg-gray-50 transition-colors"
