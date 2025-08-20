@@ -17,6 +17,8 @@ export interface ApiResponse<T> {
 export interface Order {
   id: string;
   tracking_number: string;
+  shop_name?: string;
+  cancel_reason? : string;
   payment: {
     currency: string;
     total_amount: string;
@@ -52,6 +54,8 @@ export interface OrderResponse {
     total_count: number;
     next_page_token?: string;
     orders: Order[];
+    last? : boolean;
+    currentPage?: number;
 }
 
 export interface ShopResponse {

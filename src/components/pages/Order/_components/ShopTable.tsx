@@ -37,7 +37,7 @@ export default function ShopTable({ data, hanlderClick }: ShopTableProps) {
                     {new Date(shop.createdAt).toLocaleDateString("vi-VN")}
                   </td>
                   <td className="px-4 py-2 border-b text-center space-x-2">
-                    <button onClick={() => hanlderClick(shop.id)} className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">
+                    <button onClick={() => hanlderClick(shop.id)} className="px-3 py-1 text-sm bg-orange-500 text-white rounded hover:bg-orange-600">
                        Check đơn
                     </button>
                   </td>

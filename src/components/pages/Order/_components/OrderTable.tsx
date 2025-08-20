@@ -64,12 +64,18 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
                             <tr key={order.id} className="hover:bg-gray-50">
                                 <td className="px-2 py-1 border leading-tight">{idx + 1}</td>
                                 <td className="px-2 py-1 border leading-tight">
+                                    {order.shop_name && (
+                                        <div className="py-2">
+                                            <span className="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm">{order.shop_name}</span>
+                                        </div>
+                                    )}
                                     <div>ID: {order.id}</div>
                                     <div>
                                         Tracking:{" "}
                                         {order.tracking_number || (
                                             <span className="text-red-500">Chưa có</span>
                                         )}
+                                
                                     </div>
                                     <div className="text-xs text-gray-500">
                                         {formatDate(order.create_time)}
@@ -93,13 +99,16 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
                                 <td className="px-2 py-1 border leading-tight">
                                     <span
                                         className={`px-2 py-0.5 rounded text-white text-xs ${
-                                            order.status === "Cancelled"
+                                            order.status === "CANCELLED"
                                                 ? "bg-red-500"
                                                 : "bg-blue-500"
                                         }`}
                                     >
                                         {order.status}
                                     </span>
+                                     {order.status === "CANCELLED" && (
+                                            <div className="py-1">Lý do: {order.cancel_reason}</div>
+                                        )}
                                     <div className="text-xs text-gray-500">
                                         Ship by: {order.shipping_type}
                                     </div>
