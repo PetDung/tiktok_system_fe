@@ -1,6 +1,8 @@
 import { LineItem, Order } from "@/service/types/ApiResponse";
 import React, { useRef, useState } from "react";
 import ModalProductOrderView from "./ModalProductOrderView";
+import { buyLabel, viewLabel } from "@/service/label/label-service";
+import { useParams } from "next/navigation";
 
 interface OrderTableProps {
     orders: Order[];
@@ -10,6 +12,11 @@ interface OrderTableProps {
 }
 
 export default function OrderTable({ orders, loading, hasMore, onLoadMore }: OrderTableProps) {
+
+    const params = useParams();
+    const shopId = params.id as string;
+    
+
     const [selectedProducts, setSelectedProducts] = useState<LineItem[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const tableRef = useRef<HTMLDivElement>(null);
@@ -39,6 +46,59 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
             timeZone: "UTC",
         });
     };
+
+    const isBuyLable = (order : Order ): boolean => {
+        if(order.shipping_type === "SELLER") return false;
+        if(order.status === "AWAITING_SHIPMENT") return true;
+        return false;
+    }
+    const isAddTrack = (order : Order) : boolean => {
+        if(order.shipping_type === "TIKTOK") return false;
+        if(order.status === "AWAITING_SHIPMENT") return true;
+        return false;
+    }
+
+    const isGetLabel = (order : Order) : boolean => {
+        if(order.shipping_type === "SELLER") return false;
+        if(order.status === "AWAITING_COLLECTION") return true;
+        return false;
+    }
+
+    const viewLabelHandler = async (order : Order) =>{
+        let shopIdReal = shopId ? shopId : order.shop_id
+
+        try{
+            const response = await viewLabel({
+                orderId: order.id,
+                shopId: shopIdReal
+            })
+
+            const url = response?.result?.doc_url;
+            if (url) {
+                window.open(url, "_blank");
+            }
+        }catch (e){
+            console.log(e)
+        }
+    } 
+
+    const buyLabelHandler = async (order : Order) =>{
+        let shopIdReal = shopId ? shopId : order.shop_id
+
+        try{
+            const response = await buyLabel({
+                orderId: order.id,
+                shopId: shopIdReal
+            })
+
+            const url = response?.result?.doc_url;
+            if (url) {
+                window.open(url, "_blank");
+            }
+        }catch (e){
+            console.log(e)
+        }
+    } 
 
     return (
         <>
@@ -85,17 +145,19 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
                                     className="px-2 py-1 border leading-tight cursor-pointer"
                                     onClick={() => handleShowProducts(order.line_items)}
                                 >
-                                    <div className="flex gap-1">
+                                    <div className="flex flex-wrap gap-1">
                                         {order.line_items.map((item, i) => (
                                             <img
                                                 key={i}
                                                 src={item.sku_image}
                                                 alt={item.product_name}
                                                 className="w-8 h-8 object-cover border rounded"
+                                                style={{ flexBasis: 'calc(10% - 0.25rem)' }} // 4 ảnh / hàng
                                             />
                                         ))}
                                     </div>
                                 </td>
+
                                 <td className="px-2 py-1 border leading-tight">
                                     <span
                                         className={`px-2 py-0.5 rounded text-white text-xs ${
@@ -128,9 +190,28 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
                                     <div>{order.recipient_address.postal_code}</div>
                                 </td>
                                 <td className="px-2 py-1 border leading-tight">
-                                    <button className="bg-purple-600 text-white px-2 py-0.5 rounded text-xs">
-                                        Tracking
-                                    </button>
+                                    {isBuyLable(order) && (
+                                        <button 
+                                            onClick={() => buyLabelHandler(order)}
+                                            className="bg-purple-600 text-white px-2 py-0.5 rounded text-xs hover:bg-amber-300">
+                                            create label
+                                        </button>
+                                    )}
+                                    {isAddTrack(order) &&  (
+                                        <button className="bg-purple-600 text-white px-2 py-0.5 rounded text-xs  hover:bg-amber-300">
+                                            Tracking
+                                        </button>
+                                    )}
+                                    {
+                                        isGetLabel(order) && (
+                                            <button 
+                                                onClick={() => viewLabelHandler(order)}
+                                                className="bg-purple-600 text-white px-2 py-0.5 rounded text-xs  hover:bg-amber-300"
+                                            >
+                                                Get label
+                                            </button>
+                                        )
+                                    }
                                 </td>
                             </tr>
                         ))}

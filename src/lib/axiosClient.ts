@@ -1,6 +1,11 @@
 "use client";
 
 import axios from "axios";
+import { setupCache } from "axios-cache-adapter";
+
+const cache = setupCache({
+  maxAge: 15 * 60 * 1000, // 15 phút
+});
 
 const axiosClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
@@ -8,6 +13,7 @@ const axiosClient = axios.create({
     "Content-Type": "application/json",
   },
   withCredentials: true, 
+  adapter: cache.adapter,
 });
 
 axiosClient.interceptors.request.use(

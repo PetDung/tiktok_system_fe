@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@types/js-cookie": "^3.0.6",
-    "axios": "^1.11.0",
-    "devextreme": "^25.1.4",
-    "devextreme-react": "^25.1.4",
+    "axios": "^0.21.1",
+    "axios-cache-adapter": "^2.7.3",
     "js-cookie": "^3.0.5",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.539.0",
     "next": "15.4.6",
     "react": "19.1.0",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/lodash": "^4.17.20",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

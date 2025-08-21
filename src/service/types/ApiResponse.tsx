@@ -18,6 +18,7 @@ export interface Order {
   id: string;
   tracking_number: string;
   shop_name?: string;
+  shop_id?: string;
   cancel_reason? : string;
   payment: {
     currency: string;
@@ -55,7 +56,7 @@ export interface OrderResponse {
     next_page_token?: string;
     orders: Order[];
     last? : boolean;
-    currentPage?: number;
+    current_page?: number;
 }
 
 export interface ShopResponse {
@@ -65,12 +66,17 @@ export interface ShopResponse {
     tiktokShopName : string;
     userShopName : string;
 }
+export interface Label {
+  doc_url : string;
+  tracking_number : string;
+}
 
 
 // Type alias for specific user response
 export type UserLoginResponse = ApiResponse<UserData>;
 export type OrderListResponse = ApiResponse<OrderResponse>;
 export type ShopResponseData = ApiResponse<ShopResponse>;
+export type LabelRespone = ApiResponse<Label>;
 export class AuthError extends Error {
   constructor(public code: number, message: string) {
     super(message);

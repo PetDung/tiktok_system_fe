@@ -1,33 +1,22 @@
+import axiosClient from "@/lib/axiosClient";
+import { ApiResponse, AuthError, LabelRespone } from "../types/ApiResponse";
+import axios from "axios";
 
-import axios from 'axios';
-import axiosClient from '@/lib/axiosClient';
-import { ApiResponse, AuthError, OrderListResponse } from '../types/ApiResponse';
-
-export type GetOrderParam = {
+type param  = {
+    orderId: string;
     shopId?: string;
-    nextPageToken?: string;
-    status? : string;
-    shipping? : string;
-    orderId? : string;
-    page?: number;
-    shopIds?: string[];
 }
 
 
-
-export const getOrderInShop = async (param : GetOrderParam) => {
+export const viewLabel = async (param : param) => {
   try {
-    const response = await axiosClient.post<OrderListResponse>(
-      `/order/list`,
-      {},
+    const response = await axiosClient.get<LabelRespone>(
+      `/shipping/label`,
       {
         params: {
           shop_id: param.shopId,
-          next_page_token: param.nextPageToken,
-          order_status : param.status,
-          shipping_type: param.shipping,
           order_id : param.orderId,
-        },
+        }
       }
     );
     if (response.data.code === 1000) {
@@ -47,18 +36,14 @@ export const getOrderInShop = async (param : GetOrderParam) => {
   }
 }
 
-export const getOrderAllShop = async (param : GetOrderParam) => {
+export const buyLabel = async (param : param) => {
   try {
-    const response = await axiosClient.get<OrderListResponse>(
-      `/order-sync`,
+    const response = await axiosClient.get<LabelRespone>(
+      `/label/buy`,
       {
         params: {
-          page : param.page,
           shop_id: param.shopId,
-          order_status : param.status,
-          shipping_type: param.shipping,
           order_id : param.orderId,
-          shop_ids: param.shopIds?.join(',') || ''
         }
       }
     );

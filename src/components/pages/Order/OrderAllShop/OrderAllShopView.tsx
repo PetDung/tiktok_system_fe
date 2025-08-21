@@ -1,9 +1,12 @@
 "use client"
 
 import { getOrderAllShop } from "@/service/order/order-service";
-import { Order } from "@/service/types/ApiResponse";
-import { useEffect, useState } from "react";
+import { Order, ShopResponse } from "@/service/types/ApiResponse";
+import { useCallback, useEffect, useState } from "react";
 import OrderTable from "../_components/OrderTable";
+import MultiSelect, { Option } from "../_components/MultiSelect";
+import { getMyShop } from "@/service/shop/shop-service";
+import { debounce } from "lodash";
 
 
 const statusOptions = [
@@ -24,7 +27,6 @@ const shipTypeOption = [
 ]
 
 
-
 export default function OrderAllShopView() {
 
 
@@ -35,17 +37,50 @@ export default function OrderAllShopView() {
     const [orderId, setOrderId] = useState<string>("");
     const [page, setPage] = useState<number>(0);
     const [isLast, setIsLast] = useState<boolean>(true);
+    const [shops, setShops] = useState<Option[]>([]);
+    const [shopLoading, setShopLoading] = useState<boolean>(true);
+    const [selectedShops, setSelectedShops] = useState<string[]>([]);
 
 
     useEffect(() => {
         fetchOrders(0);
-    }, [status, shipBy]);
+    }, [status, shipBy, selectedShops]);
+
+    useEffect(() => {
+        (async () => {
+            setShopLoading(true);
+            try {
+                const response = await getMyShop();
+
+                const shopsRespone : ShopResponse[] =  response.result
+                    ? Array.isArray(response.result)
+                        ? response.result
+                        : [response.result]
+                    : []
+                let optionShops: Option[] = shopsRespone.map(item => ({
+                    value: item.id,
+                    label: item.userShopName
+                }));
+                setShops(optionShops);
+                console.log("Shop data:", response);
+
+            } catch (error) {
+                console.error("Error in OrderInShopComponents:", error);
+            }finally{
+                setShopLoading(false);
+            }
+        })()
+    }, []);
 
 
     const handlerSearch = async () => {
 
         if (orderId && is18Digit(orderId) || !orderId) {
             await fetchOrders(0);
+            setIsLast(true);
+            setStatus("");
+            setShipBy("");
+            setPage(0)
             return;
         }
         alert("Không đúng định dạng id!")
@@ -55,13 +90,13 @@ export default function OrderAllShopView() {
         if (loading) return; // tránh load trùng
         setLoading(true);
         try {
-            const response = await getOrderAllShop({ page: newPage, status: status, shipping: shipBy, orderId: orderId });
+            const response = await getOrderAllShop({ page: newPage, status: status, shipping: shipBy, orderId: orderId, shopIds: selectedShops });
             if (newPage === 0) {
                 setOrders(response?.result?.orders || []);
             } else {
                 setOrders(prev => [...prev, ...(response?.result?.orders || [])]);
             }
-            setPage(response.result?.currentPage || 0)
+            setPage(response.result?.current_page || 0)
             setIsLast(response.result?.last ?? true) 
 
 
@@ -77,6 +112,20 @@ export default function OrderAllShopView() {
         return /^\d{18}$/.test(str);
     }
 
+    // hàm xử lý thực tế
+    const handleSelected = (selected: Option[]) => {
+        console.log("Selected (debounced):", selected);
+        const selectIds = selected.map(item => item.value);
+        setSelectedShops(selectIds);
+    };
+
+    // tạo phiên bản debounced của hàm
+    const debouncedHandleSelected = useCallback(
+        debounce(handleSelected, 600), // 600ms debounce
+        []
+    );
+
+
 
 
 
@@ -86,14 +135,15 @@ export default function OrderAllShopView() {
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Order List</h2>
                 <div className="flex items-center gap-2">
-                    <select className="border rounded px-2 py-1" onChange={(e) => setShipBy(e.target.value)} value={shipBy}>
+                    <select className="border rounded-lg p-1 flex justify-between items-center cursor-pointer bg-white" onChange={(e) => setShipBy(e.target.value)} value={shipBy}>
                         <option value={""} >All</option>
                         {shipTypeOption.map(item => <option value={item.value} key={item.value} >{item.label}</option>)}
                     </select>
-                    <select className="border rounded px-2 py-1" onChange={(e) => setStatus(e.target.value)} value={status}>
+                    <select className="border rounded-lg p-1 flex justify-between items-center cursor-pointer bg-white" onChange={(e) => setStatus(e.target.value)} value={status}>
                         <option value={""} >All</option>
                         {statusOptions.map(item => <option value={item.value} key={item.value} >{item.label}</option>)}
                     </select>
+                    <MultiSelect options={shops} loading={shopLoading} onChange={debouncedHandleSelected}/>
                     <input
                         type="text"
                         value={orderId}
@@ -103,12 +153,6 @@ export default function OrderAllShopView() {
                     />
                     <button className="bg-blue-500 text-white px-3 py-1 rounded" onClick={handlerSearch}>
                         Search
-                    </button>
-                    <button
-                        onClick={() => fetchOrders(0)}
-                        className="bg-green-500 text-white px-3 py-1 rounded"
-                    >
-                        Refresh
                     </button>
                 </div>
             </div>
