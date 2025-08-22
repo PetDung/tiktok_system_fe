@@ -39,7 +39,7 @@ export const viewLabel = async (param : param) => {
 export const buyLabel = async (param : param) => {
   try {
     const response = await axiosClient.get<LabelRespone>(
-      `/label/buy`,
+      `/shipping/label/buy`,
       {
         params: {
           shop_id: param.shopId,

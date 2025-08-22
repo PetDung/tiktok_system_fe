@@ -44,6 +44,7 @@ export interface Order {
 export interface LineItem {
   id: string;
   product_name: string;
+  product_id: string;
   sku_image: string;
   sku_id: string;
   sku_name : string;

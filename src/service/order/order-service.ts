@@ -18,11 +18,10 @@ export type GetOrderParam = {
 export const getOrderInShop = async (param : GetOrderParam) => {
   try {
     const response = await axiosClient.post<OrderListResponse>(
-      `/order/list`,
+      `/order/list/${param.shopId}`,
       {},
       {
         params: {
-          shop_id: param.shopId,
           next_page_token: param.nextPageToken,
           order_status : param.status,
           shipping_type: param.shipping,

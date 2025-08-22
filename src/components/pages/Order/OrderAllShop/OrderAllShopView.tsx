@@ -2,11 +2,12 @@
 
 import { getOrderAllShop } from "@/service/order/order-service";
 import { Order, ShopResponse } from "@/service/types/ApiResponse";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import OrderTable from "../_components/OrderTable";
 import MultiSelect, { Option } from "../_components/MultiSelect";
 import { getMyShop } from "@/service/shop/shop-service";
 import { debounce } from "lodash";
+import WebSocketClient from "@/lib/webSocketClient";
 
 
 const statusOptions = [
@@ -40,7 +41,35 @@ export default function OrderAllShopView() {
     const [shops, setShops] = useState<Option[]>([]);
     const [shopLoading, setShopLoading] = useState<boolean>(true);
     const [selectedShops, setSelectedShops] = useState<string[]>([]);
+    const wsClientRef = useRef<WebSocketClient | null>(null);
 
+
+    useEffect(() => {
+        const wsClient = WebSocketClient.getInstance();
+        wsClientRef.current = wsClient;
+        wsClient.connect(() => {
+            wsClient.subscribe("/user/queue/orders", (msg) => {
+                const updatedOrder: Order = JSON.parse(msg.body);
+                console.log(updatedOrder)
+                setOrders((prevOrders) => {
+                    const exists = prevOrders.some((o) => o.id === updatedOrder.id);
+
+                    if (exists) {
+                        // update
+                        return prevOrders.map((order) =>
+                            order.id === updatedOrder.id ? { ...order, ...updatedOrder } : order
+                        );
+                    } else {
+                        // thêm mới lên đầu
+                        return [updatedOrder, ...prevOrders];
+                    }
+                });
+            });
+        });
+        return () => {
+            wsClient.disconnect();
+        };
+    }, []);
 
     useEffect(() => {
         fetchOrders(0);
@@ -52,7 +81,7 @@ export default function OrderAllShopView() {
             try {
                 const response = await getMyShop();
 
-                const shopsRespone : ShopResponse[] =  response.result
+                const shopsRespone: ShopResponse[] = response.result
                     ? Array.isArray(response.result)
                         ? response.result
                         : [response.result]
@@ -66,7 +95,7 @@ export default function OrderAllShopView() {
 
             } catch (error) {
                 console.error("Error in OrderInShopComponents:", error);
-            }finally{
+            } finally {
                 setShopLoading(false);
             }
         })()
@@ -97,7 +126,7 @@ export default function OrderAllShopView() {
                 setOrders(prev => [...prev, ...(response?.result?.orders || [])]);
             }
             setPage(response.result?.current_page || 0)
-            setIsLast(response.result?.last ?? true) 
+            setIsLast(response.result?.last ?? true)
 
 
         } catch (error: any) {
@@ -132,30 +161,66 @@ export default function OrderAllShopView() {
     return (
         <div className="bg-white p-4 rounded-lg shadow">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Order List</h2>
-                <div className="flex items-center gap-2">
-                    <select className="border rounded-lg p-1 flex justify-between items-center cursor-pointer bg-white" onChange={(e) => setShipBy(e.target.value)} value={shipBy}>
-                        <option value={""} >All</option>
-                        {shipTypeOption.map(item => <option value={item.value} key={item.value} >{item.label}</option>)}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3 md:gap-0">
+                <h2 className="text-lg font-semibold text-gray-800">Order List</h2>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Ship By */}
+                    <select
+                        className="border rounded-lg px-3 py-1 text-sm cursor-pointer bg-white hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        onChange={(e) => setShipBy(e.target.value)}
+                        value={shipBy}
+                    >
+                        <option value="">All</option>
+                        {shipTypeOption.map((item) => (
+                            <option value={item.value} key={item.value}>
+                                {item.label}
+                            </option>
+                        ))}
                     </select>
-                    <select className="border rounded-lg p-1 flex justify-between items-center cursor-pointer bg-white" onChange={(e) => setStatus(e.target.value)} value={status}>
-                        <option value={""} >All</option>
-                        {statusOptions.map(item => <option value={item.value} key={item.value} >{item.label}</option>)}
+
+                    {/* Status */}
+                    <select
+                        className="border rounded-lg px-3 py-1 text-sm cursor-pointer bg-white hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        onChange={(e) => setStatus(e.target.value)}
+                        value={status}
+                    >
+                        <option value="">All</option>
+                        {statusOptions.map((item) => (
+                            <option value={item.value} key={item.value}>
+                                {item.label}
+                            </option>
+                        ))}
                     </select>
-                    <MultiSelect options={shops} loading={shopLoading} onChange={debouncedHandleSelected}/>
+
+                    {/* Shops MultiSelect */}
+                    <div className="min-w-[200px]">
+                        <MultiSelect
+                            options={shops}
+                            loading={shopLoading}
+                            onChange={debouncedHandleSelected}
+                        />
+                    </div>
+
+                    {/* Search by Order ID */}
                     <input
                         type="text"
                         value={orderId}
                         onChange={(e) => setOrderId(e.target.value)}
-                        placeholder="Search by order id"
-                        className="border rounded px-2 py-1 min-w-[300px]"
+                        placeholder="Search by order ID"
+                        className="border rounded-lg px-3 py-1 min-w-[200px] text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                     />
-                    <button className="bg-blue-500 text-white px-3 py-1 rounded" onClick={handlerSearch}>
+
+                    {/* Search Button */}
+                    <button
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded-lg text-sm font-medium transition"
+                        onClick={handlerSearch}
+                    >
                         Search
                     </button>
                 </div>
             </div>
+
 
             <OrderTable
                 orders={orders}
