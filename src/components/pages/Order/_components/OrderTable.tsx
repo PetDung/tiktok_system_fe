@@ -12,12 +12,6 @@ interface OrderTableProps {
   onLoadMore: () => void;
 }
 
-interface ProductFilter {
-  productName: string;
-  id: string;
-  product_image: string;
-}
-
 export default function OrderTable({ orders, loading, hasMore, onLoadMore }: OrderTableProps) {
   const params = useParams();
   const shopId = params.id as string;
@@ -25,15 +19,7 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
   const [selectedProducts, setSelectedProducts] = useState<LineItem[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-
-  const toggleRow = (orderId: string) => {
-    const newSet = new Set(expandedRows);
-    if (newSet.has(orderId)) newSet.delete(orderId);
-    else newSet.add(orderId);
-    setExpandedRows(newSet);
-  };
-
+  
   const handleShowProducts = (lineItems: LineItem[]) => {
     setSelectedProducts(lineItems);
     setModalOpen(true);
@@ -84,22 +70,6 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
     }
   };
 
-  function getUniqueProducts(lineItems: LineItem[]): ProductFilter[] {
-    const seen = new Set<string>();
-    const result: ProductFilter[] = [];
-    for (const item of lineItems) {
-      if (!seen.has(item.product_id)) {
-        seen.add(item.product_id);
-        result.push({
-          productName: item.product_name,
-          id: item.product_id,
-          product_image: item.sku_image,
-        });
-      }
-    }
-    return result;
-  }
-
   return (
     <>
       <div ref={tableRef} onScroll={handleScroll} className="relative h-[80vh] overflow-y-auto shadow-md rounded-lg">
@@ -119,10 +89,9 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
             {orders.map((order, idx) => (
               <Fragment key={order.id}>
                 <tr className="hover:bg-gray-50 cursor-pointer transition-all duration-150" >
-                  <td className="px-3 py-2 font-medium" onClick={() => toggleRow(order.id)}>
+                  <td className="px-3 py-2 font-medium">
                     <div className="flex flex-col justify-center items-center">
                         <div>{idx + 1}</div>
-                        <div><PanelTopOpen  size={20}/></div>
                     </div>
                   </td>
                   <td className="px-3 py-2">
@@ -161,6 +130,8 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
                     <div className="font-medium">{order.recipient_address.name}</div>
                     <div className="text-xs">{order.recipient_address.phone_number}</div>
                     <div className="text-xs">{order.recipient_address.address_detail}</div>
+                    <div className="text-xs" >{order.recipient_address.district_info.map(d => d.address_name).join(", ")}</div>
+                    <div className="text-xs">{order.recipient_address.postal_code}</div>
                   </td>
                   <td className="px-3 py-2 space-y-1">
                     {isBuyLabel(order) && (
@@ -186,27 +157,6 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
                     )}
                   </td>
                 </tr>
-
-                {/* Expandable row */}
-                {expandedRows.has(order.id) && (
-                  <tr className="bg-gray-50">
-                    <td colSpan={7} className="px-4 py-3">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {getUniqueProducts(order.line_items).map(item => (
-                          <a
-                            key={item.id}
-                            href={`https://shop.tiktok.com/view/product/${item.id}`}
-                            target="_blank"
-                            className="flex items-center gap-2 bg-white p-2 rounded shadow hover:shadow-md transition"
-                          >
-                            <img src={item.product_image} alt={item.productName} className="w-10 h-10 rounded object-cover" />
-                            <span className="text-gray-700 text-sm">{item.productName}</span>
-                          </a>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                )}
               </Fragment>
             ))}
             {loading && (

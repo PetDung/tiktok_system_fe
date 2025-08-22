@@ -81,35 +81,90 @@ export default function ViewOrderInShop() {
     return (
         <div className="bg-white p-4 rounded-lg shadow">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Order List</h2>
-                <div className="flex items-center gap-2">
-                    <select className="border rounded px-2 py-1" onChange={(e) => setShipBy(e.target.value)} value={shipBy}>
-                        <option value={""} >All</option>
-                        {shipTypeOption.map(item => <option value={item.value} key={item.value} >{item.label}</option>)}
-                    </select>
-                    <select className="border rounded px-2 py-1" onChange={(e) => setStatus(e.target.value)} value={status}>
-                        <option value={""} >All</option>
-                        {statusOptions.map(item => <option value={item.value} key={item.value} >{item.label}</option>)}
-                    </select>
-                    <input
-                        type="text"
-                        value={orderId}
-                        onChange={(e) => setOrderId(e.target.value)}
-                        placeholder="Search by order id"
-                        className="border rounded px-2 py-1 min-w-[300px]"
-                    />
-                    <button className="bg-blue-500 text-white px-3 py-1 rounded" onClick={handlerSearch}>
-                        Search
-                    </button>
-                    <button
-                        onClick={() => fetchOrders("")}
-                        className="bg-green-500 text-white px-3 py-1 rounded"
-                    >
-                        Refresh
-                    </button>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3 md:gap-0">
+                <h2 className="text-lg font-semibold text-gray-800">Order List</h2>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Ship By */}
+                    <div className="relative inline-block w-40">
+                        <select
+                            className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 bg-white cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm"
+                            onChange={(e) => setShipBy(e.target.value)}
+                            value={shipBy}
+                        >
+                            <option value="">All</option>
+                            {shipTypeOption.map((item) => (
+                                <option value={item.value} key={item.value}>
+                                    {item.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* Custom arrow */}
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg
+                                className="w-4 h-4 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="relative inline-block w-40">
+                        <select
+                            className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 bg-white cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm"
+                            onChange={(e) => setStatus(e.target.value)}
+                            value={status}
+                        >
+                            <option value="">All</option>
+                            {statusOptions.map((item) => (
+                                <option value={item.value} key={item.value}>
+                                    {item.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* Custom arrow */}
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg
+                                className="w-4 h-4 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Search by Order ID */}
+                    <form onSubmit={handlerSearch}>
+                        <input
+                            type="search"
+                            value={orderId}
+                            onChange={(e) => setOrderId(e.target.value)}
+                            placeholder="Search by order ID"
+                            className="border border-gray-300 rounded-lg px-4 py-2 min-w-[300px] text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        />
+
+                        {/* Search Button */}
+                        <button
+                            type="submit"
+                            className="bg-blue-500 hover:bg-blue-600 text-white border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium transition"
+
+                        >
+                            Search
+                        </button>
+                    </form>
                 </div>
             </div>
+           
 
             <OrderTable
                 orders={orders}

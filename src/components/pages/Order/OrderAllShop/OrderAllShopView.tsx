@@ -101,19 +101,20 @@ export default function OrderAllShopView() {
         })()
     }, []);
 
+    const handlerSearch = async (e: React.FormEvent) => {
+        e.preventDefault(); // Ngăn form submit mặc định
 
-    const handlerSearch = async () => {
-
-        if (orderId && is18Digit(orderId) || !orderId) {
+        // Nếu orderId rỗng hoặc đúng định dạng 18 chữ số
+        if (!orderId || is18Digit(orderId)) {
             await fetchOrders(0);
-            setIsLast(true);
             setStatus("");
             setShipBy("");
-            setPage(0)
+            setPage(0);
             return;
         }
-        alert("Không đúng định dạng id!")
-    }
+
+        alert("Không đúng định dạng ID!");
+    };
 
     const fetchOrders = async (newPage: number) => {
         if (loading) return; // tránh load trùng
@@ -154,10 +155,6 @@ export default function OrderAllShopView() {
         []
     );
 
-
-
-
-
     return (
         <div className="bg-white p-4 rounded-lg shadow">
             {/* Header */}
@@ -166,32 +163,62 @@ export default function OrderAllShopView() {
 
                 <div className="flex flex-wrap items-center gap-2">
                     {/* Ship By */}
-                    <select
-                        className="border rounded-lg px-3 py-1 text-sm cursor-pointer bg-white hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        onChange={(e) => setShipBy(e.target.value)}
-                        value={shipBy}
-                    >
-                        <option value="">All</option>
-                        {shipTypeOption.map((item) => (
-                            <option value={item.value} key={item.value}>
-                                {item.label}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="relative inline-block w-40">
+                        <select
+                            className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 bg-white cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm"
+                            onChange={(e) => setShipBy(e.target.value)}
+                            value={shipBy}
+                        >
+                            <option value="">All</option>
+                            {shipTypeOption.map((item) => (
+                                <option value={item.value} key={item.value}>
+                                    {item.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* Custom arrow */}
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg
+                                className="w-4 h-4 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
 
                     {/* Status */}
-                    <select
-                        className="border rounded-lg px-3 py-1 text-sm cursor-pointer bg-white hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        onChange={(e) => setStatus(e.target.value)}
-                        value={status}
-                    >
-                        <option value="">All</option>
-                        {statusOptions.map((item) => (
-                            <option value={item.value} key={item.value}>
-                                {item.label}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="relative inline-block w-40">
+                        <select
+                            className="appearance-none w-full border border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-700 bg-white cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm"
+                            onChange={(e) => setStatus(e.target.value)}
+                            value={status}
+                        >
+                            <option value="">All</option>
+                            {statusOptions.map((item) => (
+                                <option value={item.value} key={item.value}>
+                                    {item.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* Custom arrow */}
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg
+                                className="w-4 h-4 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
 
                     {/* Shops MultiSelect */}
                     <div className="min-w-[200px]">
@@ -203,21 +230,24 @@ export default function OrderAllShopView() {
                     </div>
 
                     {/* Search by Order ID */}
-                    <input
-                        type="text"
-                        value={orderId}
-                        onChange={(e) => setOrderId(e.target.value)}
-                        placeholder="Search by order ID"
-                        className="border rounded-lg px-3 py-1 min-w-[200px] text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                    />
+                    <form onSubmit={handlerSearch}>
+                        <input
+                            type="search"
+                            value={orderId}
+                            onChange={(e) => setOrderId(e.target.value)}
+                            placeholder="Search by order ID"
+                            className="border border-gray-300 rounded-lg px-4 py-2 min-w-[300px] text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        />
 
-                    {/* Search Button */}
-                    <button
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded-lg text-sm font-medium transition"
-                        onClick={handlerSearch}
-                    >
-                        Search
-                    </button>
+                        {/* Search Button */}
+                        <button
+                            type="submit"
+                            className="bg-blue-500 hover:bg-blue-600 text-white border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium transition"
+                            
+                        >
+                            Search
+                        </button>
+                    </form>
                 </div>
             </div>
 
