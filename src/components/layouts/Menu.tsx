@@ -8,7 +8,7 @@ export interface MenuItem {
   title: string;
   icon?: React.ReactNode;
   children?: MenuItem[];
-  hfref?: string; // Optional href for direct navigation
+  href?: string; // Optional href for direct navigation
 }
 
 export function Menu({ items, collapsed }: { items: MenuItem[]; collapsed: boolean }) {
@@ -27,18 +27,18 @@ function MenuItemComponent({ item, collapsed }: { item: MenuItem; collapsed: boo
   const pathname = usePathname(); // Lấy path hiện tại
 
   // Kiểm tra item active
-  const isActive = item.hfref && pathname.includes(item.hfref);
+  const isActive = item.href && pathname.includes(item.href);
 
   // Kiểm tra child active đệ quy
   const hasActiveChild = (child: MenuItem): boolean => {
-    if (child.hfref === pathname) return true;
+    if (child.href === pathname) return true;
     if (child.children) return child.children.some(hasActiveChild);
     return false;
   };
 
   // Tự động mở submenu nếu child active
   useEffect(() => {
-    if (item.children?.some((child) => child.hfref === pathname || hasActiveChild(child))) {
+    if (item.children?.some((child) => child.href === pathname || hasActiveChild(child))) {
       setOpen(true);
     }
   }, [pathname, item.children]);
@@ -46,8 +46,8 @@ function MenuItemComponent({ item, collapsed }: { item: MenuItem; collapsed: boo
   const handleClick = (item: MenuItem) => {
     if (item.children) {
       setOpen(!open);
-    } else if (item.hfref) {
-      router.push(item.hfref);
+    } else if (item.href) {
+      router.push(item.href);
     }
   };
 

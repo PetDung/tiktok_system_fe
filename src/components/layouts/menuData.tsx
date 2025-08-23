@@ -1,43 +1,37 @@
+import { Album, AlignStartHorizontal, CircleCheckBig, CircleX, LayoutDashboard, NotepadText, PackageSearch, Redo2, Store } from "lucide-react";
 import { MenuItem } from "./Menu";
 
 export const menuData: MenuItem[] = [
   {
     id: 1,
     title: "Dashboard",
-    icon: "📊",
-    hfref: "/home",
+    icon: <LayoutDashboard />,
+    href: "/home",
   },
   {
     id: 11,
     title: "Order",
-    icon: "📙",
+    icon: <NotepadText  color="red"/>,
     children: [
-      { id: 111, title: "All order", icon: "📋", hfref: "/order-all-shop"  },
-      { id: 112, title: "Order in shop", icon: "🔖", hfref: "/order-in-shop" },
-      { id: 113, title: "Refund", icon: "🔐" },
+      { id: 111, title: "All order", icon: <Album />, href: "/order-all-shop"  },
+      { id: 112, title: "Order in shop", icon: <Store />, href: "/order-in-shop" },
+      { id: 113, title: "Refund", icon: <Redo2 /> },
     ],
   },
   {
     id: 2,
     title: "Products",
-    icon: "📦",
+    icon: <PackageSearch color="red" />,
     children: [
-      { id: 21, title: "All Products", icon: "📄" },
-      {
-        id: 22,
-        title: "Categories",
-        icon: "🗂️",
-        children: [
-          { id: 221, title: "Clothes", icon: "👕" },
-          { id: 222, title: "Electronics", icon: "💻" },
-        ],
-      },
+      { id: 21, title: "New active ", icon: <CircleCheckBig />, href: "/product/active" },
+      { id: 22, title: "Product sale", icon: <AlignStartHorizontal /> },
+      { id: 23, title: "Product record", icon: <CircleX /> },
     ],
   },
   {
     id: 3,
     title: "Settings",
-    icon: "⚙️",
-    hfref: "/settings",
+    icon: <NotepadText />,
+    href: "/settings",
   },
 ];

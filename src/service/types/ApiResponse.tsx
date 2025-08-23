@@ -62,9 +62,9 @@ export interface OrderResponse {
 
 export interface ShopResponse {
     id: string;
-    name: string;
-    createdAt: Date;
-    tiktokShopName : string;
+    name?: string;
+    createdAt?: Date;
+    tiktokShopName? : string;
     userShopName : string;
 }
 export interface Label {
@@ -72,11 +72,30 @@ export interface Label {
   tracking_number : string;
 }
 
+export interface AuditFailedReason {
+    listingPlatform: string; // ví dụ: "TIKTOK_SHOP"
+    position: string;        // ví dụ: "Product"
+    reasons: string[];       // danh sách lý do
+    suggestions: string[];   // danh sách gợi ý
+}
+
+export interface Product {
+    id: string;
+    title: string;
+    status: string;
+    activeTime: number;
+    auditFailedReasons: AuditFailedReason[];
+    shop: ShopResponse;   // lấy từ getShop()
+    createdTime: number;
+    updatedTime: number;
+}
+
 
 // Type alias for specific user response
 export type UserLoginResponse = ApiResponse<UserData>;
 export type OrderListResponse = ApiResponse<OrderResponse>;
 export type ShopResponseData = ApiResponse<ShopResponse>;
+export type ProductResponse = ApiResponse<Product>;
 export type LabelRespone = ApiResponse<Label>;
 export class AuthError extends Error {
   constructor(public code: number, message: string) {
