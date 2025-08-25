@@ -63,7 +63,7 @@ export interface OrderResponse {
 export interface ShopResponse {
     id: string;
     name?: string;
-    createdAt?: Date;
+    createdAt: Date;
     tiktokShopName? : string;
     userShopName : string;
 }
