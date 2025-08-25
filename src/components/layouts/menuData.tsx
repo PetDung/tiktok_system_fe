@@ -24,7 +24,7 @@ export const menuData: MenuItem[] = [
     icon: <PackageSearch color="red" />,
     children: [
       { id: 21, title: "New active ", icon: <CircleCheckBig />, href: "/product/active" },
-      { id: 22, title: "Product sale", icon: <AlignStartHorizontal /> },
+      { id: 22, title: "Product sale", icon: <AlignStartHorizontal />,  href: "/product/sale"  },
       { id: 23, title: "Product record", icon: <CircleX />, href: "/product/record" },
     ],
   },

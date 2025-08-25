@@ -1,5 +1,5 @@
 import { ExcelColumnConfig } from "@/components/UI/ExcelExportButton";
-import { AuditFailedReason, Product } from "@/service/types/ApiResponse";
+import { AuditFailedReason, Product, ProductReport } from "@/service/types/ApiResponse";
 
 
 export const columnsProductActive: ExcelColumnConfig<Product>[] = [
@@ -43,3 +43,11 @@ export const columnsProductRecord: ExcelColumnConfig<Product>[] = [
       ).join("\n") // mỗi object xuống dòng
   },
 ]
+
+export const columnsProductSale: ExcelColumnConfig<ProductReport>[] = [
+  { header: "ID", key: "productId" },
+  { header: "Title", key: "productName" },
+  { header: "Shop", key: "shopName" }, // nested key
+  { header: "sold", key: "soldCount" }, // nested key
+]
+

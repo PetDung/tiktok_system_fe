@@ -1,3 +1,5 @@
+
+
 export interface UserData {
     id: string;
     username: string;
@@ -98,13 +100,24 @@ export interface ProductResponse {
   totalCount: number;
   
 }
-
+export interface ProductReport{
+  productId : string;
+  productName: string;
+  soldCount: number;
+  shopName: string;
+} 
+export interface ProductReportResponse{
+  products : ProductReport[];
+  endEnd: number;
+  startDate: number;
+}
 
 // Type alias for specific user response
 export type UserLoginResponse = ApiResponse<UserData>;
 export type OrderListResponse = ApiResponse<OrderResponse>;
 export type ShopResponseData = ApiResponse<ShopResponse>;
 export type ProductApiResponse = ApiResponse<ProductResponse>;
+export type ProductReportApiResponse = ApiResponse<ProductReportResponse>;
 export type LabelRespone = ApiResponse<Label>;
 export class AuthError extends Error {
   constructor(public code: number, message: string) {
