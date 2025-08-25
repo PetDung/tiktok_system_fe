@@ -3,26 +3,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { debounce } from "lodash";
 import DateRangePicker from "@/components/UI/DateRangePicker";
-import { getProductActive } from "@/service/product/product-service";
+import { getProductRecord } from "@/service/product/product-service";
 import { Product } from "@/service/types/ApiResponse";
-import ProductActiveTable from "../_component/ProductActiveTable";
+import ProductRecordTable from "../_component/ProductRecordTable";
 import ExcelExportButton from "@/components/UI/ExcelExportButton";
-import { columnsProductActive } from "@/utils/ConfigExcel";
+import { columnsProductRecord } from "@/utils/ConfigExcel";
 
 type DateState = {
   startDate: number | null;
   endDate: number | null;
 };
 
-export default function ActiveProductComponent() {
+export default function ProductRecordComponent() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [selectProducts, setSelectProducts] = useState<Product[]>([]);
   const [keyword, setKeyword] = useState<string>("");
   const [page, setPage] = useState<number>(0);
   const [isLast, setIsLast] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const loadingRef = useRef<boolean>(false);
-
+  const [selectProducts, setSelectProducts] = useState<Product[]>([]);
   const [date, setDate] = useState<DateState>({ startDate: null, endDate: null });
 
   /** Sync loading ref */
@@ -50,7 +49,7 @@ export default function ActiveProductComponent() {
     ) => {
       try {
         setLoading(true);
-        const response = await getProductActive(params);
+        const response = await getProductRecord(params);
         const list = response?.result?.products ?? [];
         setIsLast(response?.result?.last ?? true);
         setProducts((prev) => (append ? [...prev, ...list] : list));
@@ -113,7 +112,7 @@ export default function ActiveProductComponent() {
     <div className="bg-white p-4 rounded-lg shadow">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3 md:gap-0">
-        <h2 className="text-lg font-semibold text-gray-800">Product new active</h2>
+        <h2 className="text-lg font-semibold text-gray-800">Product record</h2>
         <div className="flex gap-2 items-center">
           <div className="relative flex items-center">
             <input
@@ -138,21 +137,22 @@ export default function ActiveProductComponent() {
           </div>
           <DateRangePicker onChange={handleChangeDate} />
           <ExcelExportButton
-            data={selectProducts}        
-            columns={columnsProductActive}           
-            fileName={`products_active_${Date.now()}.xlsx`}   // timestamp hiện tại
-            buttonText="Export"         
-            className="my-2"            
+            data={selectProducts}
+            columns={columnsProductRecord}
+            fileName={`products_record_${Date.now()}.xlsx`}   // timestamp hiện tại
+            buttonText="Export"
+            className="my-2"
           />
+              
         </div>
       </div>
 
-      <ProductActiveTable
+      <ProductRecordTable
         products={products}
         loading={loading}
         hasMore={!isLast}
         onLoadMore={loadMore}
-        onSelectionChange={setSelectProducts} // đồng bộ selection
+        onSelectionChange={setSelectProducts} 
       />
     </div>
   );

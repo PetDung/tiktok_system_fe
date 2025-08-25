@@ -8,6 +8,8 @@ import MultiSelect, { Option } from "../_components/MultiSelect";
 import { getMyShop } from "@/service/shop/shop-service";
 import { debounce } from "lodash";
 import WebSocketClient from "@/lib/webSocketClient";
+import { useWebSocket } from "@/Context/WebSocketContext";
+import { IMessage } from "@stomp/stompjs";
 
 
 const statusOptions = [
@@ -41,35 +43,31 @@ export default function OrderAllShopView() {
     const [shops, setShops] = useState<Option[]>([]);
     const [shopLoading, setShopLoading] = useState<boolean>(true);
     const [selectedShops, setSelectedShops] = useState<string[]>([]);
-    const wsClientRef = useRef<WebSocketClient | null>(null);
+    const wsClient = useWebSocket(); 
 
 
     useEffect(() => {
-        const wsClient = WebSocketClient.getInstance();
-        wsClientRef.current = wsClient;
-        wsClient.connect(() => {
-            wsClient.subscribe("/user/queue/orders", (msg) => {
-                const updatedOrder: Order = JSON.parse(msg.body);
-                console.log(updatedOrder)
-                setOrders((prevOrders) => {
-                    const exists = prevOrders.some((o) => o.id === updatedOrder.id);
-
-                    if (exists) {
-                        // update
-                        return prevOrders.map((order) =>
-                            order.id === updatedOrder.id ? { ...order, ...updatedOrder } : order
-                        );
-                    } else {
-                        // thêm mới lên đầu
-                        return [updatedOrder, ...prevOrders];
-                    }
-                });
+        const callback = (msg: IMessage) => {
+            const updatedOrder: Order = JSON.parse(msg.body);
+            console.log(updatedOrder)
+            setOrders((prev) => {
+                const exists = prev.some((o) => o.id === updatedOrder.id);
+                if (exists) {
+                    return prev.map((o) =>
+                        o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o
+                    );
+                } else {
+                    return [updatedOrder, ...prev];
+                }
             });
-        });
-        return () => {
-            wsClient.disconnect();
         };
-    }, []);
+        wsClient.subscribe("/user/queue/orders", callback);
+
+        // cleanup: unsubscribe khi component unmount
+        return () => {
+            wsClient.unsubscribe("/user/queue/orders");
+        };
+    }, [wsClient]);
 
     useEffect(() => {
         fetchOrders(0);

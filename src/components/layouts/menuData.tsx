@@ -25,7 +25,7 @@ export const menuData: MenuItem[] = [
     children: [
       { id: 21, title: "New active ", icon: <CircleCheckBig />, href: "/product/active" },
       { id: 22, title: "Product sale", icon: <AlignStartHorizontal /> },
-      { id: 23, title: "Product record", icon: <CircleX /> },
+      { id: 23, title: "Product record", icon: <CircleX />, href: "/product/record" },
     ],
   },
   {

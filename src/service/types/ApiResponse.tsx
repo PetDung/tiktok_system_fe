@@ -73,18 +73,19 @@ export interface Label {
 }
 
 export interface AuditFailedReason {
-    listingPlatform: string; // ví dụ: "TIKTOK_SHOP"
+    listing_platform: string; // ví dụ: "TIKTOK_SHOP"
     position: string;        // ví dụ: "Product"
     reasons: string[];       // danh sách lý do
     suggestions: string[];   // danh sách gợi ý
 }
+
 
 export interface Product {
     id: string;
     title: string;
     status: string;
     activeTime: number;
-    auditFailedReasons: AuditFailedReason[];
+    auditFailedReasons?: AuditFailedReason[];
     shop: ShopResponse;   // lấy từ getShop()
     createTime: number;
     updateTime: number;

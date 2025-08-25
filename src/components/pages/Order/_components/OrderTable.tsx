@@ -59,6 +59,7 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
     }
   };
 
+
   const buyLabelHandler = async (order: Order) => {
     const shopIdReal = shopId || order.shop_id;
     try {
