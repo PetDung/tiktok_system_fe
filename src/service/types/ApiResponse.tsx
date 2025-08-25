@@ -86,8 +86,16 @@ export interface Product {
     activeTime: number;
     auditFailedReasons: AuditFailedReason[];
     shop: ShopResponse;   // lấy từ getShop()
-    createdTime: number;
-    updatedTime: number;
+    createTime: number;
+    updateTime: number;
+}
+
+export interface ProductResponse {
+  products :  Product []
+  last? : boolean;
+  currentPage?: number;
+  totalCount: number;
+  
 }
 
 
@@ -95,7 +103,7 @@ export interface Product {
 export type UserLoginResponse = ApiResponse<UserData>;
 export type OrderListResponse = ApiResponse<OrderResponse>;
 export type ShopResponseData = ApiResponse<ShopResponse>;
-export type ProductResponse = ApiResponse<Product>;
+export type ProductApiResponse = ApiResponse<ProductResponse>;
 export type LabelRespone = ApiResponse<Label>;
 export class AuthError extends Error {
   constructor(public code: number, message: string) {

@@ -1,0 +1,42 @@
+import axiosClient from "@/lib/axiosClient";
+import { ApiResponse, AuthError, ProductApiResponse } from "../types/ApiResponse";
+import axios from "axios";
+
+
+export type GetOrderParam = {
+    status? : string;
+    startTime?: number | null;
+    endTime? : number | null ;
+    keyword? : string | null ; 
+    page :  number | null
+}
+
+
+
+export async function getProductActive(param: GetOrderParam) {
+    try {
+        const response = await axiosClient.get<ProductApiResponse>("/product/active",
+                            {
+                                params :{
+                                    start_time : param.startTime,
+                                    end_time : param.endTime,
+                                    keyword: param.keyword,
+                                    page : param.page
+                                }
+                            }
+                        );
+        if (response.data.code === 1000) {
+            return response.data; // Assuming the shop data is in the 'data' field
+        }
+        throw new AuthError(500, "Invalid response from server");
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            const serverError = error.response?.data as ApiResponse<any>;
+            throw new AuthError(
+                serverError.code || 500,
+                serverError.message || "Login failed. Please try again."
+            );
+        }
+        throw new AuthError(500, "An unexpected error occurred. Please try again.");
+    }
+} 
