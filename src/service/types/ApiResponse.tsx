@@ -26,6 +26,7 @@ export interface Order {
     currency: string;
     total_amount: string;
   };
+  payment_amount: number | null
   recipient_address: {
     name: string;
     phone_number: string;
