@@ -34,4 +34,13 @@ export const menuData: MenuItem[] = [
     icon: <NotepadText />,
     href: "/settings",
   },
+   {
+    id: 4,
+    title: "Design",
+    icon: <NotepadText />,
+     children: [
+      { id: 60, title: "Add", icon: <CircleCheckBig />, href: "/design/add" },
+      { id: 61, title: "List", icon: <AlignStartHorizontal />,  href: "/design/list"  },
+    ],
+  },
 ];

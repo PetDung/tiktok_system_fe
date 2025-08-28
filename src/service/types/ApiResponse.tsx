@@ -18,6 +18,7 @@ export interface ApiResponse<T> {
 
 export interface Order {
   id: string;
+  label : string | null;
   tracking_number: string;
   shop_name?: string;
   shop_id?: string;

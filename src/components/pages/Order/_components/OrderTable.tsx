@@ -50,15 +50,16 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
 
   const viewLabelHandler = async (order: Order) => {
     const shopIdReal = shopId || order.shop_id;
+    let url;
     try {
       const response = await viewLabel({ orderId: order.id, shopId: shopIdReal });
-      const url = response?.result?.doc_url;
-      if (url) window.open(url, "_blank");
+      url = response?.result?.doc_url;
     } catch (e) {
       console.error(e);
     }
+    if (order.label) {url = order.label;}
+    if (url) window.open(url, "_blank");
   };
-
 
   const buyLabelHandler = async (order: Order) => {
     const shopIdReal = shopId || order.shop_id;
