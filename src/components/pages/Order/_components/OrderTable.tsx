@@ -34,14 +34,15 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
   };
 
   const formatDate = (timestamp: number) =>
-    new Date(timestamp * 1000).toLocaleString("en-GB", {
-      weekday: "short",
+    new Date(timestamp * 1000).toLocaleString("vi-VN", {
+      weekday: "long",   // Thứ
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "UTC",
+      second: "2-digit",
+      timeZone: "Asia/Ho_Chi_Minh",
     });
 
   const isBuyLabel = (order: Order) => order.shipping_type !== "SELLER" && order.status === "AWAITING_SHIPMENT";

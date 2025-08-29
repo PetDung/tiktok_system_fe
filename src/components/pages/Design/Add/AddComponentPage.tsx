@@ -264,7 +264,7 @@ export default function MappingDesignPage() {
                       <td className="p-2 font-medium">{design.name}</td>
                       <td className="p-2">
                         <a
-                            href={toDriveImageLink("https://drive.google.com/file/d/1sCNBqkF4N3aoCNWjWYp3rE8RYNs1DCjM/view")}
+                            href={toDriveImageLink("https://drive.google.com/file/d/1sCNBqkF4N3aoCNWjWYp3rE8RYNs1DCjM/view") || ""}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
