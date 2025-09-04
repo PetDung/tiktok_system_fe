@@ -1,65 +1,52 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Search, Upload, Filter } from "lucide-react";
+import { getMyShop } from "@/service/shop/shop-service";
+import { Design, ShopResponse } from "@/service/types/ApiResponse";
+import { getProdcDetails } from "@/service/product/product-service";
+import { Sku } from "@/service/types/productDetails";
+import { getAllDesigns, mappingDesign, ParamMapping } from "@/service/design/design-service";
 
 export default function MappingDesignPage() {
   const [productId, setProductId] = useState("");
   const [shop, setShop] = useState("");
   const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
-  const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
+  const [selectedDesign, setSelectedDesign] = useState<string>("");
 
   const [skuSearch, setSkuSearch] = useState("");
   const [designSearch, setDesignSearch] = useState("");
   const [filters, setFilters] = useState<{ [key: string]: string }>({});
 
-  const shops = [
-    { id: "shop1", name: "Shop 1" },
-    { id: "shop2", name: "Shop 2" },
-  ];
-
+  const [shops, setShops] = useState<ShopResponse[]>([]);
   // fake sku data
-  const skus = [
-    {
-      id: "4324234324",
-      seller_sku: "SKU-RED-M",
-      sales_attributes: [
-        { name: "Color", value_name: "Red" },
-        { name: "Size", value_name: "M" },
-      ],
-    },
-    {
-      id: "3123123123",
-      seller_sku: "SKU-BLUE-L",
-      sales_attributes: [
-        { name: "Color", value_name: "Blue" },
-        { name: "Size", value_name: "L" },
-        { name: "Type", value_name: "H" },
-      ],
-    },
-    {
-      id: "9988776655",
-      seller_sku: "SKU-GREEN-XL",
-      sales_attributes: [
-        { name: "Color", value_name: "Green" },
-        { name: "Size", value_name: "XL" },
-        { name: "Type", value_name: "H" },
-      ],
-    },
-  ];
+  const [skus, setSkus] = useState<Sku[]>([]);
 
-  // fake design data
-  const designs = [
-    {
-      id: "14a91c07-64fd-41b2-b01c-0bea0c95a540",
-      name: "Custom design with logo on chest",
-      frontSide: "https://cdn.example.com/designs/front.png",
-    },
-    {
-      id: "22b11c07-64fd-41b2-b01c-0bea0c95a541",
-      name: "Back print typography design",
-      frontSide: "https://cdn.example.com/designs/back.png",
-    },
-  ];
+  const [designs, setDesigns] = useState<Design[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      // handle shop
+      await fethShop();
+      await fetchDesign();
+    })();
+  }, []);
+
+  const fethShop = async () =>{
+    const responseShopFetch =await getMyShop();
+    setShops(responseShopFetch.result);
+  } 
+  const fetchDesign = async () => {
+    const responseDesignFetch =  await getAllDesigns()
+    setDesigns(responseDesignFetch.result)
+  };
+  const handleSeacrch = async () => {
+    try {
+      const response = await getProdcDetails({ productId: productId, shopId: shop });
+      setSkus(response.result.skus);
+    } catch (error: any) {
+      alert(error);
+    }
+  };
 
   const toggleSku = (id: string) => {
     setSelectedSkus((prev) =>
@@ -74,13 +61,14 @@ export default function MappingDesignPage() {
     }));
   };
 
-  const handleSubmit = () => {
-    const payload = {
-      productId,
+  const handleSubmit = async () => {
+    const payload : ParamMapping = {
+      productId:  productId.trim(),
       skuIds: selectedSkus,
       designId: selectedDesign,
     };
-    alert(JSON.stringify(payload, null, 2));
+    const response = await mappingDesign(payload);
+    console.log(response);
   };
 
   // lấy danh sách attribute distinct từ SKU
@@ -95,7 +83,10 @@ export default function MappingDesignPage() {
     }
     // lọc theo attribute
     for (let attr of Object.keys(filters)) {
-      if (filters[attr] && !sku.sales_attributes.some((a) => a.name === attr && a.value_name === filters[attr])) {
+      if (
+        filters[attr] &&
+        !sku.sales_attributes.some((a) => a.name === attr && a.value_name === filters[attr])
+      ) {
         return false;
       }
     }
@@ -107,12 +98,26 @@ export default function MappingDesignPage() {
   );
 
   function toDriveImageLink(link: string): string | null {
-  const match = link.match(/\/d\/([^/]+)\//);
-  if (!match) return null;
-  const fileId = match[1];
-  return `https://drive.google.com/uc?export=view&id=${fileId}`;
-}
+    const match = link.match(/\/d\/([^/]+)\//);
+    if (!match) return null;
+    const fileId = match[1];
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  }
 
+  // chọn tất cả sku hiện tại
+  const toggleSelectAll = () => {
+    const allIds = filteredSkus.map((sku) => sku.id);
+    const allSelected = allIds.every((id) => selectedSkus.includes(id));
+    if (allSelected) {
+      setSelectedSkus((prev) => prev.filter((id) => !allIds.includes(id)));
+    } else {
+      setSelectedSkus((prev) => Array.from(new Set([...prev, ...allIds])));
+    }
+  };
+
+  const isAllSelected =
+    filteredSkus.length > 0 &&
+    filteredSkus.every((sku) => selectedSkus.includes(sku.id));
 
   return (
     <div className="flex flex-col items-center p-6">
@@ -134,11 +139,14 @@ export default function MappingDesignPage() {
             <option value="">Chọn shop</option>
             {shops.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {s.userShopName}
               </option>
             ))}
           </select>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700">
+          <button
+            onClick={handleSeacrch}
+            className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700"
+          >
             <Search size={18} />
             Search
           </button>
@@ -166,7 +174,9 @@ export default function MappingDesignPage() {
                 const values = Array.from(
                   new Set(
                     skus.flatMap((s) =>
-                      s.sales_attributes.filter((a) => a.name === attr).map((a) => a.value_name)
+                      s.sales_attributes
+                        .filter((a) => a.name === attr)
+                        .map((a) => a.value_name)
                     )
                   )
                 );
@@ -193,7 +203,14 @@ export default function MappingDesignPage() {
               <table className="w-full text-sm border-collapse">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="p-2 text-left">Chọn</th>
+                    <th className="p-2 text-left">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4"
+                      />
+                    </th>
                     <th className="p-2 text-left">SKU</th>
                     <th className="p-2 text-left">Thuộc tính</th>
                   </tr>
@@ -264,14 +281,18 @@ export default function MappingDesignPage() {
                       <td className="p-2 font-medium">{design.name}</td>
                       <td className="p-2">
                         <a
-                            href={toDriveImageLink("https://drive.google.com/file/d/1sCNBqkF4N3aoCNWjWYp3rE8RYNs1DCjM/view") || ""}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                          href={
+                            toDriveImageLink(
+                              "https://drive.google.com/file/d/1sCNBqkF4N3aoCNWjWYp3rE8RYNs1DCjM/view"
+                            ) || ""
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
                         >
-                            View
+                          View
                         </a>
-                        </td>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,0 +1,56 @@
+import axiosClient from "@/lib/axiosClient";
+import { ApiResponse, AuthError, DesignResponse } from "../types/ApiResponse";
+import axios from "axios";
+
+
+export type ParamMapping = {
+    productId : string;
+    designId: string;
+    skuIds : string [];
+}
+
+export async function getAllDesigns() {
+
+     try {
+        const response = await axiosClient.get<DesignResponse>(`/design`);
+        if (response.data.code === 1000) {
+            return response.data;
+        }
+        throw new AuthError(500, "Invalid response from server");
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            const serverError = error.response?.data as ApiResponse<any>;
+            throw new AuthError(
+                serverError.code || 500,
+                serverError.message || "Login failed. Please try again."
+            );
+        }
+        throw new AuthError(500, "An unexpected error occurred. Please try again.");
+    }
+
+
+}
+
+export async function mappingDesign(param : ParamMapping) {
+
+     try {
+        const response = await axiosClient.post<any>(`/design/mapping-design`,
+            param
+        );
+        if (response.data.code === 1000) {
+            return response.data;
+        }
+        throw new AuthError(500, "Invalid response from server");
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            const serverError = error.response?.data as ApiResponse<any>;
+            throw new AuthError(
+                serverError.code || 500,
+                serverError.message || "Login failed. Please try again."
+            );
+        }
+        throw new AuthError(500, "An unexpected error occurred. Please try again.");
+    }
+
+
+}

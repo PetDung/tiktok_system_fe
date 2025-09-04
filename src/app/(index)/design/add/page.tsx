@@ -1,8 +1,9 @@
-import AddDesginComponet from "@/components/pages/Design/Add/AddComponentPage";
+import MappingDesignPage from "@/components/pages/Design/Add/MappingDesignPage";
+
 
 export default function AddDesgin (){
 
     return (
-        <AddDesginComponet/>
+        <MappingDesignPage/>
     )
 }

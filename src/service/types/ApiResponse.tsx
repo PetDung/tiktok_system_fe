@@ -1,3 +1,4 @@
+import { ProductDetails } from "./productDetails";
 
 
 export interface UserData {
@@ -114,13 +115,25 @@ export interface ProductReportResponse{
   startDate: number;
 }
 
+export interface Design {
+  id: string;        // nếu kế thừa từ Base có id
+  name: string;
+  frontSide?: string;
+  backSide?: string;
+  leftSide?: string;
+  rightSide?: string;
+}
+
+
 // Type alias for specific user response
 export type UserLoginResponse = ApiResponse<UserData>;
 export type OrderListResponse = ApiResponse<OrderResponse>;
-export type ShopResponseData = ApiResponse<ShopResponse>;
+export type ShopResponseData = ApiResponse<ShopResponse[]>;
 export type ProductApiResponse = ApiResponse<ProductResponse>;
 export type ProductReportApiResponse = ApiResponse<ProductReportResponse>;
+export type ProductDetailsResponse = ApiResponse<ProductDetails>;
 export type LabelRespone = ApiResponse<Label>;
+export type DesignResponse = ApiResponse<Design[]>;
 export class AuthError extends Error {
   constructor(public code: number, message: string) {
     super(message);
