@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axiosClient";
-import { ApiResponse, AuthError, ProductApiResponse, ProductDetailsResponse, ProductReportApiResponse, ProductReportResponse } from "../types/ApiResponse";
+import { ApiResponse, AuthError, Product, ProductApiResponse, ProductDetailsResponse, ProductReportApiResponse, ProductReportResponse } from "../types/ApiResponse";
 import axios from "axios";
 
 
@@ -9,8 +9,9 @@ export type GetOrderParam = {
     startTime?: number | null;
     endTime? : number | null ;
     keyword? : string | null ; 
-    page :  number | null
-    filter? : string | null
+    page :  number | null;
+    filter? : string | null;
+    pageSize? : number | null;
 }
 
 export type GetProductSaleParam = {
@@ -48,10 +49,30 @@ export async function getProductActive(param: GetOrderParam) {
                                     end_time : param.endTime,
                                     keyword: param.keyword,
                                     page : param.page,
-                                    filter: "ACTIVE"
+                                    filter: "ACTIVE",
+                                    page_size: param.pageSize || 20
                                 }
                             }
                         );
+        if (response.data.code === 1000) {
+            return response.data; // Assuming the shop data is in the 'data' field
+        }
+        throw new AuthError(500, "Invalid response from server");
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            const serverError = error.response?.data as ApiResponse<any>;
+            throw new AuthError(
+                serverError.code || 500,
+                serverError.message || "Login failed. Please try again."
+            );
+        }
+        throw new AuthError(500, "An unexpected error occurred. Please try again.");
+    }
+} 
+
+export async function getAllProductActive() {
+    try {
+        const response = await axiosClient.get<ApiResponse<Product[]>>("/product/active/all",);
         if (response.data.code === 1000) {
             return response.data; // Assuming the shop data is in the 'data' field
         }

@@ -3,16 +3,18 @@ import React, { Fragment, useRef, useState } from "react";
 import ModalProductOrderView from "./ModalProductOrderView";
 import { buyLabel, viewLabel } from "@/service/label/label-service";
 import { useParams } from "next/navigation";
-import { PanelTopOpen } from "lucide-react";
 
 interface OrderTableProps {
   orders: Order[];
   loading: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
+  isSelectable?: boolean;
+  selectList?: Set<string>;
+  onSelectChange?: (selected: Set<string>) => void;
 }
 
-export default function OrderTable({ orders, loading, hasMore, onLoadMore }: OrderTableProps) {
+export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSelectable = false, selectList = new Set(), onSelectChange = () => null }: OrderTableProps) {
   const params = useParams();
   const shopId = params.id as string;
 
@@ -43,11 +45,12 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
       minute: "2-digit",
       second: "2-digit",
       timeZone: "Asia/Ho_Chi_Minh",
-    });
+  });
 
   const isBuyLabel = (order: Order) => order.shipping_type !== "SELLER" && order.status === "AWAITING_SHIPMENT";
   const isAddTrack = (order: Order) => order.shipping_type !== "TIKTOK" && order.status === "AWAITING_SHIPMENT";
   const isGetLabel = (order: Order) => order.shipping_type !== "SELLER" && order.status === "AWAITING_COLLECTION";
+
 
   const viewLabelHandler = async (order: Order) => {
     const shopIdReal = shopId || order.shop_id;
@@ -73,13 +76,46 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
     }
   };
 
+  const hasId = (id: string) => selectList.has(id);
+
+    // Chọn/bỏ chọn từng item
+    const onSelect = (value: string, checked: boolean) => {
+      const newSelected = new Set(selectList);
+      if (checked) newSelected.add(value);
+      else newSelected.delete(value);
+      onSelectChange(newSelected);
+    };
+
+    // Chọn/bỏ chọn tất cả
+    const selectAll = (checked: boolean) => {
+      if (checked) {
+        onSelectChange(new Set(orders.map(o => o.id)));
+      } else {
+        onSelectChange(new Set());
+      }
+    };
+
+  // Kiểm tra trạng thái checkbox "tất cả"
+  const isAllSelected = orders.length > 0 && selectList.size === orders.length;
+
+
   return (
     <>
       <div ref={tableRef} onScroll={handleScroll} className="relative h-[80vh] overflow-y-auto shadow-md rounded-lg">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 sticky top-0 z-20 shadow-sm">
             <tr>
-              <th className="px-3 py-2 text-left">#</th>
+              <th className="px-3 py-2 text-left">
+                  <div>#</div>
+                  {isSelectable && (
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={(e) => selectAll(e.currentTarget.checked)}
+                      className="mt-1 h-5 w-5 cursor-pointer accent-green-600 rounded transition duration-200"
+                    />
+                  )}
+              </th>
               <th className="px-3 py-2 text-left">Order ID</th>
               <th className="px-3 py-2 text-left">Products</th>
               <th className="px-3 py-2 text-left">Status</th>
@@ -96,6 +132,15 @@ export default function OrderTable({ orders, loading, hasMore, onLoadMore }: Ord
                   <td className="px-3 py-2 font-medium">
                     <div className="flex flex-col justify-center items-center">
                         <div>{idx + 1}</div>
+                        {isSelectable && 
+                        <input 
+                          type="checkbox"  
+                          name="orderId" 
+                          value={order.id}  
+                          className="mt-1 h-5 w-5 cursor-pointer accent-green-600 rounded transition duration-200"
+                          checked={hasId(order.id)}
+                          onChange={(e) => onSelect(e.currentTarget.value,  e.currentTarget.checked)}
+                          />}
                     </div>
                   </td>
                   <td className="px-3 py-2">

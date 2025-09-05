@@ -93,7 +93,16 @@ export interface Product {
     auditFailedReasons?: AuditFailedReason[];
     shop: ShopResponse;   // lấy từ getShop()
     createTime: number;
+    categoryChains: Category[] | null;
     updateTime: number;
+}
+
+
+interface Category {
+  id: string;
+  is_leaf: boolean;
+  local_name: string;
+  parent_id: string;
 }
 
 export interface ProductResponse {
@@ -140,3 +149,37 @@ export class AuthError extends Error {
     this.name = 'AuthError';
   }
 }
+
+export function getCategoryPathText(chains: Category[]): string {
+  console.log("getCategoryPathText chains", chains);  
+  if (!chains.length) return "";
+  // Tạo map id -> category
+  const map = new Map(chains.map(c => [c.id, c]));
+
+  // Tìm danh mục lá (leaf). Nếu không có leaf, lấy phần tử cuối
+  const leaf = chains.find(c => c.is_leaf) || chains[chains.length - 1];
+
+  const path: string[] = [];
+  let current: Category | undefined = leaf;
+
+  // Duyệt lên tới root
+  while (current) {
+    path.unshift(current.local_name); // thêm từ leaf lên root
+    current = current.parent_id && map.get(current.parent_id) ? map.get(current.parent_id) : undefined;
+  }
+  console.log("getCategoryPathText path", path);
+
+  return path.join(" > ");
+}
+
+export const formatDate = (timestamp: number) =>
+    new Date(timestamp * 1000).toLocaleString("vi-VN", {
+      weekday: "long",   // Thứ
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: "Asia/Ho_Chi_Minh",
+  });

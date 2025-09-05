@@ -1,17 +1,26 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Search, Upload, Filter } from "lucide-react";
+import { Search, Upload, Filter, Trash, Eye } from "lucide-react";
 import { getMyShop } from "@/service/shop/shop-service";
 import { Design, ShopResponse } from "@/service/types/ApiResponse";
 import { getProdcDetails } from "@/service/product/product-service";
-import { Sku } from "@/service/types/productDetails";
-import { getAllDesigns, mappingDesign, ParamMapping } from "@/service/design/design-service";
+import { ProductDetails, Sku } from "@/service/types/productDetails";
+import { createDesign, deleteDesign, getAllDesigns, mappingDesign, ParamMapping } from "@/service/design/design-service";
+import DesignModal, { DesignRequest } from "../_components/AddDesign";
+import ShopSelect from "../_components/ShopSelect";
+import LoadingOverlay from "@/components/UI/LoadingOverlay";
+import { set } from "lodash";
+import ProductCard from "../_components/ProductCard";
+import DesignView from "../_components/DesignView";
 
 export default function MappingDesignPage() {
   const [productId, setProductId] = useState("");
   const [shop, setShop] = useState("");
   const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
   const [selectedDesign, setSelectedDesign] = useState<string>("");
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [productDetails, setProductDetails] = useState<ProductDetails>();
 
   const [skuSearch, setSkuSearch] = useState("");
   const [designSearch, setDesignSearch] = useState("");
@@ -25,26 +34,40 @@ export default function MappingDesignPage() {
 
   useEffect(() => {
     (async () => {
-      // handle shop
-      await fethShop();
-      await fetchDesign();
+      setLoading(true);
+      try {
+        await fetchShop();
+        await fetchDesign();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
-  const fethShop = async () =>{
-    const responseShopFetch =await getMyShop();
+
+  const fetchShop = async () => {
+    const responseShopFetch = await getMyShop();
     setShops(responseShopFetch.result);
-  } 
+  }
   const fetchDesign = async () => {
-    const responseDesignFetch =  await getAllDesigns()
+    console.log("Fetch design result:");
+    const responseDesignFetch = await getAllDesigns()
+    console.log("Fetch design result:", responseDesignFetch);
     setDesigns(responseDesignFetch.result)
   };
+
   const handleSeacrch = async () => {
+    setLoading(true);
     try {
       const response = await getProdcDetails({ productId: productId, shopId: shop });
       setSkus(response.result.skus);
+      setProductDetails(response.result);
     } catch (error: any) {
       alert(error);
+    } finally {
+      setLoading(false); // tắt loading dù thành công hay thất bại
     }
   };
 
@@ -62,13 +85,37 @@ export default function MappingDesignPage() {
   };
 
   const handleSubmit = async () => {
-    const payload : ParamMapping = {
-      productId:  productId.trim(),
+    // Validate
+    if (!productId?.trim()) {
+      alert("Vui lòng nhập Product ID");
+      return;
+    }
+    if (!selectedSkus || selectedSkus.length === 0) {
+      alert("Vui lòng chọn ít nhất 1 SKU");
+      return;
+    }
+    if (!selectedDesign) {
+      alert("Vui lòng chọn Design");
+      return;
+    }
+
+    const payload: ParamMapping = {
+      productId: productId.trim(),
       skuIds: selectedSkus,
       designId: selectedDesign,
     };
-    const response = await mappingDesign(payload);
-    console.log(response);
+
+    setLoading(true); // bật loading trước khi gọi API
+    try {
+      const response = await mappingDesign(payload);
+      console.log(response);
+      alert("Mapping thành công");
+    } catch (error) {
+      console.error(error);
+      alert("Có lỗi xảy ra: " + error);
+    } finally {
+      setLoading(false); // tắt loading dù thành công hay thất bại
+    }
   };
 
   // lấy danh sách attribute distinct từ SKU
@@ -97,13 +144,6 @@ export default function MappingDesignPage() {
     d.name.toLowerCase().includes(designSearch.toLowerCase())
   );
 
-  function toDriveImageLink(link: string): string | null {
-    const match = link.match(/\/d\/([^/]+)\//);
-    if (!match) return null;
-    const fileId = match[1];
-    return `https://drive.google.com/uc?export=view&id=${fileId}`;
-  }
-
   // chọn tất cả sku hiện tại
   const toggleSelectAll = () => {
     const allIds = filteredSkus.map((sku) => sku.id);
@@ -114,6 +154,28 @@ export default function MappingDesignPage() {
       setSelectedSkus((prev) => Array.from(new Set([...prev, ...allIds])));
     }
   };
+
+  const handleSubmitDesign = async (data: DesignRequest) => {
+    try {
+      await createDesign(data);
+      console.log("Created design");
+      await fetchDesign();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  const handleDeleteDesign = async (designId: string) => {
+    if (!confirm("Bạn có chắc muốn xóa design này?")) return;
+    try {
+      const response = await deleteDesign(designId);
+      if (response.code === 1000) {
+        alert("Xóa design thành công");
+        await fetchDesign();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   const isAllSelected =
     filteredSkus.length > 0 &&
@@ -131,18 +193,11 @@ export default function MappingDesignPage() {
             onChange={(e) => setProductId(e.target.value)}
             className="flex-1 border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <select
+          <ShopSelect
+            shops={shops}
             value={shop}
-            onChange={(e) => setShop(e.target.value)}
-            className="border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Chọn shop</option>
-            {shops.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.userShopName}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setShop(val)}
+          />
           <button
             onClick={handleSeacrch}
             className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700"
@@ -151,9 +206,10 @@ export default function MappingDesignPage() {
             Search
           </button>
         </div>
+        <ProductCard productDetails={productDetails} />
 
         {/* Tables */}
-        <div className="grid grid-cols-2 gap-6 flex-1 overflow-hidden">
+        <div className="grid grid-cols-2 gap-6 flex-1 overflow-hidden mt-2">
           {/* SKU Column */}
           <div className="border rounded-2xl p-4 flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 mb-3">
@@ -226,7 +282,7 @@ export default function MappingDesignPage() {
                           className="w-4 h-4"
                         />
                       </td>
-                      <td className="p-2 font-medium">{sku.seller_sku}</td>
+                      <td className="p-2 font-medium">{sku.id}</td>
                       <td className="p-2">
                         {sku.sales_attributes.map((a) => (
                           <span
@@ -255,6 +311,17 @@ export default function MappingDesignPage() {
                 onChange={(e) => setDesignSearch(e.target.value)}
                 className="flex-1 border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
+              <div className="p-6">
+                <button onClick={() => setOpen(true)} className="rounded bg-green-600 px-4 py-2 text-white">
+                  Add design
+                </button>
+
+                <DesignModal
+                  open={open}
+                  onClose={() => setOpen(false)}
+                  onSubmit={handleSubmitDesign}
+                />
+              </div>
             </div>
 
             <div className="overflow-y-auto flex-1">
@@ -279,19 +346,17 @@ export default function MappingDesignPage() {
                         />
                       </td>
                       <td className="p-2 font-medium">{design.name}</td>
-                      <td className="p-2">
-                        <a
-                          href={
-                            toDriveImageLink(
-                              "https://drive.google.com/file/d/1sCNBqkF4N3aoCNWjWYp3rE8RYNs1DCjM/view"
-                            ) || ""
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                        >
-                          View
-                        </a>
+                      <td className="p-2 text-center">
+                        <div className="flex gap-2 items-center justify-center">
+                          <button
+                            onClick={() => handleDeleteDesign(design.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium transition flex items-center gap-1"
+                          >
+                            <Trash className="w-4 h-4" />
+                            Delete
+                          </button>
+                          <DesignView design={design} />
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -312,6 +377,7 @@ export default function MappingDesignPage() {
           </button>
         </div>
       </div>
+      <LoadingOverlay show={loading} />
     </div>
   );
 }

@@ -1,10 +1,17 @@
 import { ExcelColumnConfig } from "@/components/UI/ExcelExportButton";
-import { AuditFailedReason, Product, ProductReport } from "@/service/types/ApiResponse";
+import { AuditFailedReason, getCategoryPathText, Product, ProductReport } from "@/service/types/ApiResponse";
+import { get } from "lodash";
 
 
 export const columnsProductActive: ExcelColumnConfig<Product>[] = [
   { header: "ID", key: "id" },
   { header: "Title", key: "title" },
+  {
+    header: "Category",
+    key: "categoryChains",
+    format: (value) => getCategoryPathText(value || []),
+
+  },
   { header: "Shop", key: "shop.userShopName" }, // nested key
   { 
     header: "Create Time (UTC)", 

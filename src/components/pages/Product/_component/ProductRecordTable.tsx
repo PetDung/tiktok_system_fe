@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment, useRef, useState, useCallback, useEffect } from "react";
-import { AuditFailedReason, Product } from "@/service/types/ApiResponse";
+import { AuditFailedReason, formatDate, getCategoryPathText, Product } from "@/service/types/ApiResponse";
 import { Copy, Info } from "lucide-react";
 import { debounce } from "lodash";
 
@@ -30,11 +30,11 @@ export default function ProductRecordTable({
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
 
   const toggleSelectProduct = (product: Product) => {
-      setSelectedProducts((prev) => {
-        const exists = prev.some((p) => p.id === product.id);
-        if (exists) return prev.filter((p) => p.id !== product.id);
-        else return [...prev, product];
-      });
+    setSelectedProducts((prev) => {
+      const exists = prev.some((p) => p.id === product.id);
+      if (exists) return prev.filter((p) => p.id !== product.id);
+      else return [...prev, product];
+    });
   };
 
   /** Toggle chọn tất cả sản phẩm */
@@ -110,6 +110,7 @@ export default function ProductRecordTable({
               <th className="px-4 py-3 text-left font-bold text-gray-700">Shop</th>
               <th className="px-4 py-3 text-left font-bold text-gray-700">Thời gian</th>
               <th className="px-4 py-3 text-left font-bold text-gray-700">Product</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700">Category</th>
               <th className="px-4 py-3 text-left font-bold text-gray-700">Status</th>
               <th className="px-4 py-3 text-left font-bold text-gray-700">Reason</th>
               <th className="px-4 py-3 text-left font-bold text-gray-700">Link</th>
@@ -136,31 +137,33 @@ export default function ProductRecordTable({
                     <td className="px-4 py-3 font-medium text-gray-800">
                       <div className="flex flex-col space-y-1">
                         <span>
-                          <span className="font-semibold text-gray-700">Create time (UTC): </span>
-                          {new Date(product.createTime * 1000).toLocaleString("vi-VN", {
-                            timeZone: "UTC",
-                          })}
+                          <span className="font-semibold text-gray-700 text-xs">
+                            Create time (VN):
+                          </span>{" "}
+                          {formatDate(product.createTime)}
                         </span>
                         <span>
-                          <span className="font-semibold text-gray-700">Update time (UTC): </span>
-                          {new Date(product.updateTime * 1000).toLocaleString("vi-VN", {
-                            timeZone: "UTC",
-                          })}
+                          <span className="font-semibold text-gray-700 text-xs">
+                            Active time (VN):
+                          </span>{" "}
+                          {formatDate(product.activeTime)}
                         </span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-600 max-w-xs">
                       <p className="line-clamp-2">{product.title}</p>
                     </td>
+                    <td className="px-4 py-3 text-gray-600 max-w-xs">
+                      <p className="line-clamp-2">{getCategoryPathText(product.categoryChains || [])}</p>
+                    </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          product.status === "ACTIVE"
+                        className={`px-2 py-1 text-xs rounded-full ${product.status === "ACTIVE"
                             ? "bg-green-100 text-green-700"
                             : product.status === "REJECTED"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
                       >
                         {product.status}
                       </span>

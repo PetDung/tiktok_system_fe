@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment, useRef, useCallback, useEffect, useState } from "react";
-import { Product } from "@/service/types/ApiResponse";
+import { formatDate, getCategoryPathText, Product } from "@/service/types/ApiResponse";
 import { Copy } from "lucide-react";
 import { debounce } from "lodash";
 
@@ -10,7 +10,6 @@ type Props = {
   loading?: boolean;
   hasMore?: boolean;
   onLoadMore?: () => void;
-  onSelectionChange?: (selected: Product[]) => void; // callback khi chọn sản phẩm
 };
 
 export default function ProductActiveTable({
@@ -18,12 +17,9 @@ export default function ProductActiveTable({
   loading = false,
   hasMore = false,
   onLoadMore,
-  onSelectionChange,
 }: Props) {
   const copiedIdRef = useRef<string | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
-
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
 
   /** Scroll handler debounced */
   const handleScroll = useCallback(
@@ -55,29 +51,6 @@ export default function ProductActiveTable({
     }
   };
 
-  /** Toggle chọn 1 sản phẩm */
-  const toggleSelectProduct = (product: Product) => {
-    setSelectedProducts((prev) => {
-      const exists = prev.some((p) => p.id === product.id);
-      if (exists) return prev.filter((p) => p.id !== product.id);
-      else return [...prev, product];
-    });
-  };
-
-  /** Toggle chọn tất cả sản phẩm */
-  const toggleSelectAll = (checked: boolean) => {
-    setSelectedProducts(checked ? products : []);
-  };
-
-  /** Khi selectedProducts thay đổi, báo parent */
-  useEffect(() => {
-    onSelectionChange?.(selectedProducts);
-  }, [selectedProducts, onSelectionChange]);
-
-  /** Check nếu sản phẩm đang được chọn */
-  const isSelected = (product: Product) =>
-    selectedProducts.some((p) => p.id === product.id);
-
   return (
     <div
       ref={tableRef}
@@ -86,18 +59,12 @@ export default function ProductActiveTable({
       <table className="min-w-full text-sm">
         <thead className="bg-gray-50 sticky top-0 z-20">
           <tr>
-            <th className="px-4 py-3">
-              <input
-                type="checkbox"
-                checked={selectedProducts.length === products.length && products.length > 0}
-                onChange={(e) => toggleSelectAll(e.target.checked)}
-              />
-            </th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">STT</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">ID</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">Shop</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">Thời gian</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">Product</th>
+            <th className="px-4 py-3 text-left font-bold text-gray-700">Category</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">Status</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">Link</th>
           </tr>
@@ -108,17 +75,8 @@ export default function ProductActiveTable({
             return (
               <Fragment key={product.id}>
                 <tr
-                  className={`hover:bg-gray-50 transition-colors ${
-                    isSelected(product) ? "bg-blue-50" : ""
-                  }`}
+                  className={`hover:bg-gray-50 transition-colors`}
                 >
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={isSelected(product)}
-                      onChange={() => toggleSelectProduct(product)}
-                    />
-                  </td>
                   <td className="px-4 py-3 text-gray-600">{index + 1}</td>
                   <td className="px-4 py-3 text-gray-600">{product.id}</td>
                   <td className="px-4 py-3 font-medium text-gray-800">
@@ -127,26 +85,26 @@ export default function ProductActiveTable({
                   <td className="px-4 py-3 font-medium text-gray-800">
                     <div className="flex flex-col space-y-1">
                       <span>
-                        <span className="font-semibold text-gray-700">
-                          Create time (UTC):
+                        <span className="font-semibold text-gray-700 text-xs">
+                          Create time (VN):
                         </span>{" "}
-                        {new Date(product.createTime * 1000).toLocaleString("vi-VN", {
-                          timeZone: "UTC",
-                        })}
+                        {formatDate(product.createTime)}
                       </span>
                       <span>
-                        <span className="font-semibold text-gray-700">
-                          Active time (UTC):
+                        <span className="font-semibold text-gray-700 text-xs">
+                          Active time (VN):
                         </span>{" "}
-                        {new Date(product.activeTime * 1000).toLocaleString("vi-VN", {
-                          timeZone: "UTC",
-                        })}
+                          {formatDate(product.activeTime)}
                       </span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600 max-w-xs">
                     <p className="line-clamp-2">{product.title}</p>
                   </td>
+                  <td className="px-4 py-3 text-gray-600 max-w-xs">
+                    <p className="line-clamp-2">{getCategoryPathText(product.categoryChains || [])}</p>
+                  </td>
+
                   <td className="px-4 py-3">
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${

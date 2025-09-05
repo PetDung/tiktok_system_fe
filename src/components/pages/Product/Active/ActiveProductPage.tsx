@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { debounce } from "lodash";
+import { debounce, get, set } from "lodash";
 import DateRangePicker from "@/components/UI/DateRangePicker";
-import { getProductActive } from "@/service/product/product-service";
+import { getAllProductActive, getProductActive } from "@/service/product/product-service";
 import { Product } from "@/service/types/ApiResponse";
 import ProductActiveTable from "../_component/ProductActiveTable";
 import ExcelExportButton from "@/components/UI/ExcelExportButton";
 import { columnsProductActive } from "@/utils/ConfigExcel";
+import LoadingOverlay from "@/components/UI/LoadingOverlay";
 
 type DateState = {
   startDate: number | null;
@@ -21,6 +22,7 @@ export default function ActiveProductComponent() {
   const [page, setPage] = useState<number>(0);
   const [isLast, setIsLast] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingSetup, setLoadingSetup] = useState<boolean>(false);
   const loadingRef = useRef<boolean>(false);
 
   const [date, setDate] = useState<DateState>({ startDate: null, endDate: null });
@@ -62,6 +64,18 @@ export default function ActiveProductComponent() {
     },
     []
   );
+  const allProductActive = async () => {
+    setLoadingSetup(true);
+    try {
+        const response = await getAllProductActive();
+        setSelectProducts(response?.result || []);
+      } catch (error) {
+        console.error("Fetch product error:", error);
+      } finally {
+        setLoadingSetup(false);
+      }
+  };
+
 
   /** Debounced search */
   const triggerSearch = useMemo(
@@ -142,8 +156,21 @@ export default function ActiveProductComponent() {
             columns={columnsProductActive}           
             fileName={`products_active_${Date.now()}.xlsx`}   // timestamp hiện tại
             buttonText="Export"         
-            className="my-2"            
+            className="my-2"    
           />
+          <button
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded
+              ${loadingSetup
+                ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                : "bg-amber-300 text-black hover:bg-amber-700"
+              }
+            `}
+            onClick={allProductActive}
+            disabled={loadingSetup}
+          >
+            Tạo dữ liệu
+          </button>
         </div>
       </div>
 
@@ -152,8 +179,8 @@ export default function ActiveProductComponent() {
         loading={loading}
         hasMore={!isLast}
         onLoadMore={loadMore}
-        onSelectionChange={setSelectProducts} // đồng bộ selection
       />
+      <LoadingOverlay show={loadingSetup} />
     </div>
   );
 }
