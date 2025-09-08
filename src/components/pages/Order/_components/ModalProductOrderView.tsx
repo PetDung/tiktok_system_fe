@@ -6,9 +6,10 @@ interface ProductModalProps {
     isOpen: boolean;
     onClose: () => void;
     lineItems: LineItem[];
+    shopId?: string;
 }
 
-export default function ModalProductOrderView({ isOpen, onClose, lineItems }: ProductModalProps) {
+export default function ModalProductOrderView({ isOpen, onClose, lineItems, shopId }: ProductModalProps) {
     const [showImage, setShowImage] = useState(false);
     const [image, setImage] = useState("");
 
@@ -64,6 +65,17 @@ export default function ModalProductOrderView({ isOpen, onClose, lineItems }: Pr
 
                                 <div className="flex flex-col justify-center">
                                     <span className="text-gray-800 font-medium text-sm">{item.product_name}</span>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-gray-800 font-medium text-sm">p_id: {item.product_id}</span>
+                                        <a
+                                            target="_blank"
+                                            href={`/design/add?product_id=${item.product_id}&shop_id=${shopId}&sku_id=${item.sku_id}`}
+                                            className="text-blue-500 font-medium text-sm hover:underline"
+                                        >
+                                            Thêm design
+                                        </a>
+                                    </div>
+                                    <span className="text-gray-800 font-medium text-sm">sku_id: {item.sku_id}</span>
                                     <span className="text-gray-500 text-xs">SKU: {item.sku_name}</span>
                                     <a
                                         key={item.id}

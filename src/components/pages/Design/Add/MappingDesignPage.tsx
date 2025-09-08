@@ -5,26 +5,36 @@ import { getMyShop } from "@/service/shop/shop-service";
 import { Design, ShopResponse } from "@/service/types/ApiResponse";
 import { getProdcDetails } from "@/service/product/product-service";
 import { ProductDetails, Sku } from "@/service/types/productDetails";
-import { createDesign, deleteDesign, getAllDesigns, mappingDesign, ParamMapping } from "@/service/design/design-service";
+import { createDesign, deleteDesign, getAllDesigns, getDesignBSkuAndProduct, mappingDesign, ParamMapping } from "@/service/design/design-service";
 import DesignModal, { DesignRequest } from "../_components/AddDesign";
 import ShopSelect from "../_components/ShopSelect";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
-import { set } from "lodash";
 import ProductCard from "../_components/ProductCard";
 import DesignView from "../_components/DesignView";
+import {useSearchParams  } from "next/navigation";
+import DesignModalView from "../_components/DesignModalView";
+
 
 export default function MappingDesignPage() {
-  const [productId, setProductId] = useState("");
-  const [shop, setShop] = useState("");
+
+  const searchParams = useSearchParams(); // hook Next.js App Router
+  const productIdParam = searchParams.get('product_id') || "";
+  const shopIdParam = searchParams.get('shop_id') || "";
+  const skuIdParam = searchParams.get('sku_id') || "";
+
+  const [productId, setProductId] = useState(productIdParam);
+  const [shop, setShop] = useState(shopIdParam);
   const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
   const [selectedDesign, setSelectedDesign] = useState<string>("");
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [loading, setLoading] = useState(false);
   const [productDetails, setProductDetails] = useState<ProductDetails>();
 
-  const [skuSearch, setSkuSearch] = useState("");
+  const [skuSearch, setSkuSearch] = useState(skuIdParam);
   const [designSearch, setDesignSearch] = useState("");
   const [filters, setFilters] = useState<{ [key: string]: string }>({});
+  const [designView, setDesignView] = useState<Design | null>(null);
 
   const [shops, setShops] = useState<ShopResponse[]>([]);
   // fake sku data
@@ -38,6 +48,9 @@ export default function MappingDesignPage() {
       try {
         await fetchShop();
         await fetchDesign();
+        if(productIdParam && shopIdParam) {
+          await handleSeacrch();
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -125,7 +138,7 @@ export default function MappingDesignPage() {
 
   const filteredSkus = skus.filter((sku) => {
     // lọc theo search
-    if (skuSearch && !sku.seller_sku.toLowerCase().includes(skuSearch.toLowerCase())) {
+    if (skuSearch && !sku.id.includes(skuSearch.toLowerCase())) {
       return false;
     }
     // lọc theo attribute
@@ -180,6 +193,19 @@ export default function MappingDesignPage() {
   const isAllSelected =
     filteredSkus.length > 0 &&
     filteredSkus.every((sku) => selectedSkus.includes(sku.id));
+
+  const handlerClickSku = async (skuId: string, proudctId:string) => {
+     try {
+      const response = await getDesignBSkuAndProduct(skuId, proudctId);
+      if (response.code === 1000) {
+        console.log("Design hiện tại:", response.result);
+        setDesignView(response.result);
+        setOpenView(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
     <div className="flex flex-col items-center p-6">
@@ -281,6 +307,7 @@ export default function MappingDesignPage() {
                           onChange={() => toggleSku(sku.id)}
                           className="w-4 h-4"
                         />
+                        <div onClick={() => handlerClickSku(sku.id, productId)} className="text-blue-500 text-xs cursor-pointer hover:underline">Xem desgin hiện tại</div>
                       </td>
                       <td className="p-2 font-medium">{sku.id}</td>
                       <td className="p-2">
@@ -315,12 +342,6 @@ export default function MappingDesignPage() {
                 <button onClick={() => setOpen(true)} className="rounded bg-green-600 px-4 py-2 text-white">
                   Add design
                 </button>
-
-                <DesignModal
-                  open={open}
-                  onClose={() => setOpen(false)}
-                  onSubmit={handleSubmitDesign}
-                />
               </div>
             </div>
 
@@ -378,6 +399,17 @@ export default function MappingDesignPage() {
         </div>
       </div>
       <LoadingOverlay show={loading} />
+      <DesignModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onSubmit={handleSubmitDesign}
+      />
+      <DesignModalView
+        open={openView}
+        onClose={() => setOpenView(false)}
+        initial={designView || { id: "", name: "", frontSide: "", backSide: "", leftSide: "", rightSide: "" }}
+        title="Design hiện tại"
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Album, AlignStartHorizontal, CircleCheckBig, CircleX, LayoutDashboard, NotepadText, PackageSearch, Redo2, Store } from "lucide-react";
+import { Album, AlignStartHorizontal, CircleCheckBig, CircleX, Component, Info, LayoutDashboard, NotepadText, PackageSearch, Redo2, Settings, Store, UserCog } from "lucide-react";
 import { MenuItem } from "./Menu";
 
 export const menuData: MenuItem[] = [
@@ -31,13 +31,17 @@ export const menuData: MenuItem[] = [
   {
     id: 3,
     title: "Settings",
-    icon: <NotepadText />,
-    href: "/settings",
+    icon: <Settings color="red" />,
+    children: [
+      { id: 22133, title: "Shop setting", icon: <Store />, href: "/setting/shop" },
+      { id: 321123, title: "Account setting", icon: <UserCog />,  href: "/product/sale"  },
+      { id: 2323123, title: "Infomation", icon: <Info />, href: "/product/record" },
+    ],
   },
    {
     id: 4,
     title: "Design",
-    icon: <NotepadText />,
+    icon: <Component color="red" />,
      children: [
       { id: 60, title: "Add", icon: <CircleCheckBig />, href: "/design/add" },
       { id: 61, title: "List", icon: <AlignStartHorizontal />,  href: "/design/list"  },

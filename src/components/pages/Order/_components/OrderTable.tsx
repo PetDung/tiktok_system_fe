@@ -3,6 +3,8 @@ import React, { Fragment, useRef, useState } from "react";
 import ModalProductOrderView from "./ModalProductOrderView";
 import { buyLabel, viewLabel } from "@/service/label/label-service";
 import { useParams } from "next/navigation";
+import ShopSelect from './../../Design/_components/ShopSelect';
+import { set } from 'lodash';
 
 interface OrderTableProps {
   orders: Order[];
@@ -16,14 +18,17 @@ interface OrderTableProps {
 
 export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSelectable = false, selectList = new Set(), onSelectChange = () => null }: OrderTableProps) {
   const params = useParams();
-  const shopId = params.id as string;
+  let shopId = params.id as string;
 
   const [selectedProducts, setSelectedProducts] = useState<LineItem[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [shopSelect, setShopSelect] = useState<string>(shopId || "");
+
   const tableRef = useRef<HTMLDivElement>(null);
   
-  const handleShowProducts = (lineItems: LineItem[]) => {
+  const handleShowProducts = (lineItems: LineItem[], shopIdSelected: string) => {
     setSelectedProducts(lineItems);
+    setShopSelect(shopIdSelected);
     setModalOpen(true);
   };
 
@@ -151,7 +156,12 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
                     </div>
                     <div className="text-gray-400 text-xs">{formatDate(order.create_time)}</div>
                   </td>
-                  <td className="px-3 py-2" onClick={(e) => { e.stopPropagation(); handleShowProducts(order.line_items); }}>
+                  <td className="px-3 py-2" onClick={(e) => { 
+                      e.stopPropagation(); 
+                      let temp: string = shopId || order.shop_id || "";
+                      console.log("shopId in OrderTable", temp);
+                      handleShowProducts(order.line_items, temp);
+                  }}>
                     <div className="flex flex-wrap gap-2">
                       {order.line_items.map((item, i) => (
                         <img
@@ -236,6 +246,7 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         lineItems={selectedProducts}
+        shopId = { shopSelect }
       />
     </>
   );

@@ -66,6 +66,14 @@ export interface OrderResponse {
     current_page?: number;
 }
 
+export interface ResponsePage<T> {
+    total_count: number;
+    next_page_token?: string;
+    orders: T[];
+    last? : boolean;
+    current_page?: number;
+}
+
 export interface ShopResponse {
     id: string;
     name?: string;
