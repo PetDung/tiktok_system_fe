@@ -44,6 +44,7 @@ export interface Order {
   shipping_type: string;
   create_time: number;
   line_items: LineItem[];
+  is_note : boolean | null;
 }
 
 export interface LineItem {

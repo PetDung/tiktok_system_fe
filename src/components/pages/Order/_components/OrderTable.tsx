@@ -128,7 +128,7 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
           <tbody className="bg-white divide-y divide-gray-200">
             {orders.map((order, idx) => (
               <Fragment key={order.id}>
-                <tr className="hover:bg-gray-50 cursor-pointer transition-all duration-150" >
+                <tr className="hover:bg-gray-50 cursor-pointer transition-all duration-150 relative" >
                   <td className="px-3 py-2 font-medium">
                     <div className="flex flex-col justify-center items-center">
                         <div>{idx + 1}</div>
@@ -208,6 +208,14 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
                       >
                         Get Label
                       </button>
+                    )}
+                     {order.is_note && (
+                      <span
+                      className="absolute top-0 right-0 h-6 w-4
+                       bg-red-500 rounded-tr-lg 
+                       rounded-bl-lg flex items-center 
+                       justify-center text-white text-xs font-bold">
+                    </span>
                     )}
                   </td>
                 </tr>
