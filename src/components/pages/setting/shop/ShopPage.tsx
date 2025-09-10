@@ -1,4 +1,3 @@
-// app/shops/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,7 +17,7 @@ export default function ShopsPage() {
     if (loading) return;
     setLoading(true);
     try {
-      const response = await getMyShopPage(pageNumber, size);
+      const response = await getMyShopPage(pageNumber, size); // nếu BE support search
       setShops((prev) =>
         append ? [...prev, ...response.result.orders] : response.result.orders
       );
@@ -40,12 +39,6 @@ export default function ShopsPage() {
     fetchShops(0, false);
   };
 
-  const handleLoadMore = () => {
-    if (!last) {
-      fetchShops(page + 1, true);
-    }
-  };
-
   return (
     <div className="p-6">
       <h1 className="mb-4 text-2xl font-bold">TikTok Shops</h1>
@@ -58,24 +51,21 @@ export default function ShopsPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 rounded border px-3 py-2"
         />
-        <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">
+        <button
+          type="submit"
+          className="rounded bg-blue-600 px-4 py-2 text-white"
+        >
           Search
         </button>
       </form>
 
-      <ShopTable shops={shops} setShops={setShops} loading={loading} />
-
-      {!last && (
-        <div className="mt-4 text-center">
-          <button
-            onClick={handleLoadMore}
-            className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300"
-            disabled={loading}
-          >
-            {loading ? "Loading..." : "Load More"}
-          </button>
-        </div>
-      )}
+      <ShopTable
+        shops={shops}
+        setShops={setShops}
+        loading={loading}
+        last={last}
+        fetchMore={() => fetchShops(page + 1, true)}
+      />
     </div>
   );
 }

@@ -25,8 +25,9 @@ export default function ShopRow({ shop, index, setShops }: Props) {
         )
       );
       setEditing(false);
-    } catch (err) {
+    } catch (err : any) {
       console.error(err);
+      alert(err.message || "Failed to update shop name");
     }
   };
 
