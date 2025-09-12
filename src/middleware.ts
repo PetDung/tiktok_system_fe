@@ -10,10 +10,6 @@ export function middleware(request: NextRequest) {
 
   // Allow access to public paths without token
   if (publicPaths.includes(pathname)) {
-    // If user has token and tries to access login/register, redirect to dashboard
-    if (token) {
-      return NextResponse.redirect(new URL('/home', request.url));
-    }
     return NextResponse.next();
   }
 
