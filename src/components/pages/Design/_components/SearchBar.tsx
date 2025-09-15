@@ -21,7 +21,7 @@ export default function SearchBar({
   handleSearch,
 }: Props) {
   return (
-    <div className="flex items-center space-x-4 mb-4">
+    <div className="flex items-center gap-2 mb-4">
       <input
         type="text"
         placeholder="Nhập Product ID..."

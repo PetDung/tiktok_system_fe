@@ -22,12 +22,15 @@ import DesignModalView from "../_components/DesignModalView";
 import SearchBar from "../_components/SearchBar";
 import SkuTable from "../_components/SkuTable";
 import DesignTable from "../_components/DesignTable";
+import { ThumbPreviewProps } from "../_components/ThumbPreview";
 
 export default function MappingDesignPage() {
   const searchParams = useSearchParams();
   const productIdParam = searchParams.get("product_id") || "";
   const shopIdParam = searchParams.get("shop_id") || "";
   const skuIdParam = searchParams.get("sku_id") || "";
+
+
 
   const [productId, setProductId] = useState(productIdParam);
   const [shop, setShop] = useState(shopIdParam);
@@ -45,8 +48,6 @@ export default function MappingDesignPage() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [openView, setOpenView] = useState(false);
-  const [designView, setDesignView] = useState<Design | null>(null);
-
   const [filters, setFilters] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -116,6 +117,7 @@ export default function MappingDesignPage() {
     try {
       const response = await mappingDesign(payload);
       console.log(response);
+      await handleSearch();
       alert("Mapping thành công");
     } catch (error) {
       console.error(error);
@@ -146,19 +148,6 @@ export default function MappingDesignPage() {
       console.error(error);
     }
   };
-
-  const handlerClickSku = async (skuId: string, proudctId: string) => {
-    try {
-      const response = await getDesignBSkuAndProduct(skuId, proudctId);
-      if (response.code === 1000) {
-        setDesignView(response.result);
-        setOpenView(true);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   return (
     <div className="flex flex-col items-center p-6">
       <div className="w-full h-[85vh] bg-white rounded-2xl shadow p-6 flex flex-col">
@@ -169,7 +158,7 @@ export default function MappingDesignPage() {
           shops={shops}
           setShop={setShop}
           handleSearch={handleSearch}
-        />
+        /> 
 
         <ProductCard productDetails={productDetails} />
 
@@ -182,7 +171,6 @@ export default function MappingDesignPage() {
             setFilters={setFilters}
             selectedSkus={selectedSkus}
             setSelectedSkus={setSelectedSkus}
-            handlerClickSku={handlerClickSku}
             productId={productId}
           />
 
@@ -213,21 +201,6 @@ export default function MappingDesignPage() {
         open={open}
         onClose={() => setOpen(false)}
         onSubmit={handleSubmitDesign}
-      />
-      <DesignModalView
-        open={openView}
-        onClose={() => setOpenView(false)}
-        initial={
-          designView || {
-            id: "",
-            name: "",
-            frontSide: "",
-            backSide: "",
-            leftSide: "",
-            rightSide: "",
-          }
-        }
-        title="Design hiện tại"
       />
     </div>
   );

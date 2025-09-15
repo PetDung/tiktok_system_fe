@@ -1,5 +1,10 @@
 import { ProductDetails } from "./productDetails";
 
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+}
 
 export interface UserData {
     id: string;
@@ -16,6 +21,11 @@ export interface ApiResponse<T> {
     result: T;
 }
 
+export interface Setting {
+  connectUrl: string;
+  orderSheetId: string;
+  driverId: string;
+}
 
 export interface Order {
   id: string;
@@ -104,6 +114,13 @@ export interface Product {
     createTime: number;
     categoryChains: Category[] | null;
     updateTime: number;
+    mainImages: MainImage[]
+}
+
+export interface MainImage {
+  thumb_urls : string[];
+  urls: string[];
+  uri: string;
 }
 
 
@@ -140,6 +157,7 @@ export interface Design {
   backSide?: string;
   leftSide?: string;
   rightSide?: string;
+  finalUrl? : string;
 }
 
 
@@ -159,31 +177,18 @@ export class AuthError extends Error {
   }
 }
 
-export function getCategoryPathText(chains: Category[]): string {
-  console.log("getCategoryPathText chains", chains);  
+export function getCategoryPathText(chains: Category[] = []): string {
   if (!chains.length) return "";
-  // Tạo map id -> category
-  const map = new Map(chains.map(c => [c.id, c]));
 
-  // Tìm danh mục lá (leaf). Nếu không có leaf, lấy phần tử cuối
+  // Tìm category lá (leaf). Nếu không có, lấy phần tử cuối
   const leaf = chains.find(c => c.is_leaf) || chains[chains.length - 1];
 
-  const path: string[] = [];
-  let current: Category | undefined = leaf;
-
-  // Duyệt lên tới root
-  while (current) {
-    path.unshift(current.local_name); // thêm từ leaf lên root
-    current = current.parent_id && map.get(current.parent_id) ? map.get(current.parent_id) : undefined;
-  }
-  console.log("getCategoryPathText path", path);
-
-  return path.join(" > ");
+  // Trả về tên category, fallback thành chuỗi rỗng nếu không có
+  return leaf?.local_name ?? "";
 }
 
 export const formatDate = (timestamp: number) =>
     new Date(timestamp * 1000).toLocaleString("vi-VN", {
-      weekday: "long",   // Thứ
       year: "numeric",
       month: "2-digit",
       day: "2-digit",

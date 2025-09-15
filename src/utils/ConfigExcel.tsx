@@ -56,5 +56,9 @@ export const columnsProductSale: ExcelColumnConfig<ProductReport>[] = [
   { header: "Title", key: "productName" },
   { header: "Shop", key: "shopName" }, // nested key
   { header: "sold", key: "soldCount" }, // nested key
+  { header: "link", 
+    key: "productId",
+    format : (value) => `https://shop.tiktok.com/view/product/${value}`
+  },
 ]
 

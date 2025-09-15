@@ -1,4 +1,4 @@
-import { Album, AlignStartHorizontal, CircleCheckBig, CircleX, Component, Info, LayoutDashboard, NotepadText, PackageSearch, Redo2, Settings, Store, UserCog } from "lucide-react";
+import { Album, AlignStartHorizontal, BookAlert, CircleCheckBig, CircleX, Component, Group, Info, LayoutDashboard, NotepadText, PackageSearch, Redo2, Settings, Store, UserCog } from "lucide-react";
 import { MenuItem } from "./Menu";
 
 export const menuData: MenuItem[] = [
@@ -6,7 +6,11 @@ export const menuData: MenuItem[] = [
     id: 1,
     title: "Dashboard",
     icon: <LayoutDashboard />,
-    href: "/home",
+    children: [
+      { id: 111, title: "Hướng đẫn", icon: <BookAlert />, href: "/home"  },
+      // { id: 112, title: "Order in shop", icon: <Store />, href: "/order-in-shop" },
+      // { id: 113, title: "Refund", icon: <Redo2 /> },
+    ],
   },
   {
     id: 11,
@@ -34,8 +38,9 @@ export const menuData: MenuItem[] = [
     icon: <Settings color="red" />,
     children: [
       { id: 22133, title: "Shop setting", icon: <Store />, href: "/setting/shop" },
-      { id: 321123, title: "Account setting", icon: <UserCog />,  href: "/product/sale"  },
-      { id: 2323123, title: "Infomation", icon: <Info />, href: "/product/record" },
+      { id: 321123, title: "Account setting", icon: <UserCog />,  href: "/setting/account"  },
+      { id: 2323123, title: "Infomation", icon: <Info />, href: "/setting/info" },
+      { id: 378921789312, title: "Nhóm", icon: <Group />, href: "/setting/group" },
     ],
   },
    {

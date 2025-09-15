@@ -95,7 +95,7 @@ export default function ModalProductOrderView({ isOpen, onClose, lineItems, shop
             {/* Lightbox for Image */}
             {showImage && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
                     onClick={() => setShowImage(false)}
                 >
                     <div className="relative p-4 max-w-4xl max-h-[90%]">

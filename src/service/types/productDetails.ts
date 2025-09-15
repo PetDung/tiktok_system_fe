@@ -101,6 +101,7 @@ interface StatusInfo {
 }
 
 export interface Sku {
+  designId: unknown;
   id: string;
   seller_sku: string;
   price: Price;

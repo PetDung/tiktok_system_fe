@@ -1,19 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Eye, X } from "lucide-react";
+import { Img } from "react-image";
 
-// Props type
 export type ThumbPreviewProps = {
-  thumbUrl: string; // ✅ truyền trực tiếp URL thumbnail
-  fullImageUrl?: string; // optional full-size image URL
-  size?: number; // thumbnail size in px
+  thumbUrl: string;
+  fullImageUrl?: string;
+  size?: number;
   alt?: string;
 };
 
-/**
- * ThumbPreview
- * Component hiển thị ảnh thumbnail (URL truyền trực tiếp)
- * Hover có icon con mắt → click mở modal xem ảnh lớn.
- */
 export default function ThumbPreview({
   thumbUrl,
   fullImageUrl,
@@ -33,7 +28,6 @@ export default function ThumbPreview({
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // close when clicking outside image
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (!open) return;
@@ -47,18 +41,14 @@ export default function ThumbPreview({
 
   return (
     <>
-      <div
-        className="relative inline-block"
-        style={{ width: size, height: size }}
-      >
+      <div className="relative inline-block" style={{ width: size, height: size }}>
         {/* gray background */}
         <div className="w-full h-full bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-          <img
+          <Img
             src={thumbUrl}
             alt={alt}
-            width={size}
-            height={size}
-            loading="lazy"
+            loader={<div className="w-full h-full bg-gray-200 animate-pulse" />}
+            unloader={<div className="w-full h-full bg-red-200 flex items-center justify-center">Not exit</div>}
             style={{ objectFit: "cover", display: "block", width: "100%", height: "100%" }}
           />
         </div>
@@ -77,19 +67,9 @@ export default function ThumbPreview({
 
       {/* Modal */}
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          role="dialog"
-          aria-modal="true"
-        >
-          {/* backdrop */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-
-          <div
-            ref={modalRef}
-            className="relative max-w-[90vw] max-h-[90vh] p-4 rounded-lg z-10"
-            style={{ outline: "none" }}
-          >
+          <div ref={modalRef} className="relative max-w-[90vw] max-h-[90vh] p-4 rounded-lg z-10" style={{ outline: "none" }}>
             <button
               onClick={() => setOpen(false)}
               className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 z-20"
@@ -97,11 +77,12 @@ export default function ThumbPreview({
             >
               <X className="w-5 h-5" />
             </button>
-
             <div className="rounded-md overflow-hidden bg-gray-100 p-2">
-              <img
+              <Img
                 src={largeUrl}
                 alt={alt}
+                loader={<div className="w-[80vw] h-[80vh] bg-gray-200 animate-pulse" />}
+                unloader={<div className="w-[80vw] h-[80vh] bg-red-200 flex items-center justify-center">Not exit</div>}
                 style={{ display: "block", maxWidth: "80vw", maxHeight: "80vh", objectFit: "contain" }}
               />
             </div>

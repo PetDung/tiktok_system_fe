@@ -10,6 +10,8 @@ export type ParamMapping = {
     skuIds : string [];
 }
 
+export type SkuDesignMap = Record<string, Design>;
+
 export async function getAllDesigns() {
 
      try {
@@ -61,6 +63,33 @@ export async function getDesignBSkuAndProduct(skuId: string, productId: string) 
 
 
 }
+
+export async function getAllDesignSkusAndProduct(skuIds: string[], productId: string) {
+     try {
+        const response = await axiosClient.get<ApiResponse<SkuDesignMap>>(`/design/get-design-by-batch-sku-product`,
+            {
+                params: {
+                    sku_ids: skuIds.join(","),
+                    product_id: productId
+                }
+            }
+        );
+        if (response.data.code === 1000) {
+            return response.data;
+        }
+        throw new AuthError(500, "Invalid response from server");
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            const serverError = error.response?.data as ApiResponse<any>;
+            throw new AuthError(
+                serverError.code || 500,
+                serverError.message || "Login failed. Please try again."
+            );
+        }
+        throw new AuthError(500, "An unexpected error occurred. Please try again.");
+    }
+}
+
 
 
 
@@ -128,4 +157,30 @@ export async function deleteDesign(id: string) {
         }
         throw new AuthError(500, "An unexpected error occurred. Please try again.");
     }
+}
+
+export async function removeSkusDesign(productId: string, ids: string[]) {
+  try {
+    const response = await axiosClient.delete<any>('/design/remove-skus', {
+      params: {
+        productId,
+        skusToRemove: ids.join(',') // gửi mảng dưới dạng chuỗi "id1,id2,id3"
+      }
+    });
+
+    if (response.data.code === 1000) {
+      return response.data;
+    }
+
+    throw new AuthError(500, "Invalid response from server");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const serverError = error.response?.data as ApiResponse<any>;
+      throw new AuthError(
+        serverError?.code || 500,
+        serverError?.message || "Request failed. Please try again."
+      );
+    }
+    throw new AuthError(500, "An unexpected error occurred. Please try again.");
+  }
 }

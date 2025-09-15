@@ -35,7 +35,7 @@ export default function ShopSelect({ shops, value, onChange }: ShopSelectProps) 
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute mt-1 w-full rounded-xl border bg-white shadow-lg z-10">
+        <div className="absolute mt-1 w-full rounded-xl border bg-white shadow-lg z-30">
           {/* Search input */}
           <div className="p-2">
             <input
