@@ -1,4 +1,4 @@
-import { Album, AlignStartHorizontal, BookAlert, CircleCheckBig, CircleX, Component, Group, Info, LayoutDashboard, NotepadText, PackageSearch, Redo2, Settings, Store, UserCog } from "lucide-react";
+import { Album, AlignStartHorizontal, BookAlert, CircleCheckBig, CircleX, Component, Group, Info, LayoutDashboard, NotepadText, PackageSearch, Printer, Redo2, Settings, Store, UserCog } from "lucide-react";
 import { MenuItem } from "./Menu";
 
 export const menuData: MenuItem[] = [
@@ -33,6 +33,15 @@ export const menuData: MenuItem[] = [
     ],
   },
   {
+    id: 4,
+    title: "Design",
+    icon: <Component color="red" />,
+     children: [
+      { id: 60, title: "Add", icon: <CircleCheckBig />, href: "/design/add" },
+      { id: 378921789312, title: "Nhà in", icon: <Printer />, href: "/design/printer" },
+    ],
+  },
+  {
     id: 3,
     title: "Settings",
     icon: <Settings color="red" />,
@@ -41,15 +50,6 @@ export const menuData: MenuItem[] = [
       { id: 321123, title: "Account setting", icon: <UserCog />,  href: "/setting/account"  },
       { id: 2323123, title: "Infomation", icon: <Info />, href: "/setting/info" },
       { id: 378921789312, title: "Nhóm", icon: <Group />, href: "/setting/group" },
-    ],
-  },
-   {
-    id: 4,
-    title: "Design",
-    icon: <Component color="red" />,
-     children: [
-      { id: 60, title: "Add", icon: <CircleCheckBig />, href: "/design/add" },
-      { id: 61, title: "List", icon: <AlignStartHorizontal />,  href: "/design/list"  },
     ],
   },
 ];

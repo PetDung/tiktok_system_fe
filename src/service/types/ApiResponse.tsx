@@ -159,7 +159,11 @@ export interface Design {
   rightSide?: string;
   finalUrl? : string;
 }
-
+export interface PrintShop {
+  id: string;
+  name: string;
+  description: string;
+}
 
 // Type alias for specific user response
 export type UserLoginResponse = ApiResponse<UserData>;
