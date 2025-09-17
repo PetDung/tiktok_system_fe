@@ -34,7 +34,7 @@ export default function PrintShopList({ data = [], onEdit = () => {}, onDelete =
           <table className="min-w-full border-collapse">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-3 text-left">Tên</th>
+                <th className="px-6 py-3 text-left">Thông tin</th>
                 <th className="px-6 py-3 text-left">Mô tả</th>
                 <th className="px-6 py-3 text-left">Hành động</th>
               </tr>
@@ -50,7 +50,14 @@ export default function PrintShopList({ data = [], onEdit = () => {}, onDelete =
                       selectedShops.includes(shop.id) ? 'bg-blue-50 border-l-4 border-blue-500' : ''
                     }`}
                   >
-                    <td className="px-6 py-4 font-medium text-gray-900">{shop.name}</td>
+                   <td className="px-6 py-4 font-medium text-gray-900">
+                      <div className="flex flex-col">
+                        <span className="text-base font-semibold">{shop.name}</span>
+                        <span className="py-0.5 text-xs rounded bg-gray-100 text-gray-600">
+                        {shop.id}
+                      </span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-gray-600">{shop.description}</td>
                     <td className="px-6 py-4 flex gap-2">
                       <button

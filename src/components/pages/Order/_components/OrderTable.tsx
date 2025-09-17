@@ -1,28 +1,46 @@
-import { LineItem, Order } from "@/service/types/ApiResponse";
-import React, { Fragment, useRef, useState } from "react";
+import { LineItem, Order, PrintShop } from "@/service/types/ApiResponse";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import ModalProductOrderView from "./ModalProductOrderView";
 import { buyLabel, viewLabel } from "@/service/label/label-service";
 import { useParams } from "next/navigation";
-import ShopSelect from './../../Design/_components/ShopSelect';
-import { set } from 'lodash';
+import OptionalSelect, { Option } from "@/components/UI/OptionalSelect";
+import { getAllPrinter } from "@/service/print/print-service";
+import EditableField from "@/components/UI/EditableField";
+import { updateCostOrder } from "@/service/order/order-service";
+
 
 interface OrderTableProps {
   orders: Order[];
   loading: boolean;
   hasMore: boolean;
+  printer? : PrintShop[]
   onLoadMore: () => void;
   isSelectable?: boolean;
   selectList?: Set<string>;
   onSelectChange?: (selected: Set<string>) => void;
+  updatePOrder?:(orderId: string, printerId : string | null) => void
+  type?: string;
 }
 
-export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSelectable = false, selectList = new Set(), onSelectChange = () => null }: OrderTableProps) {
+export default function  OrderTable(
+  { orders, 
+    loading,
+     hasMore, 
+     onLoadMore, 
+     isSelectable = false, 
+     selectList = new Set(), 
+     onSelectChange = () => null ,
+     updatePOrder, 
+     printer = [],
+     type = "ONE"
+    }: OrderTableProps) {
   const params = useParams();
   let shopId = params.id as string;
 
   const [selectedProducts, setSelectedProducts] = useState<LineItem[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [shopSelect, setShopSelect] = useState<string>(shopId || "");
+  const [printerOption, setPrinterOption] = useState<Option[]>([]);  
 
   const tableRef = useRef<HTMLDivElement>(null);
   
@@ -31,6 +49,14 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
     setShopSelect(shopIdSelected);
     setModalOpen(true);
   };
+
+  useEffect(()=> {
+    const options : Option[] = printer.map(item => ({
+          value : item.id,
+          label : item.name
+        }))
+    setPrinterOption(options)
+  }, [printer])
 
   const handleScroll = () => {
     if (!tableRef.current) return;
@@ -70,6 +96,10 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
     if (url) window.open(url, "_blank");
   };
 
+  const handlerUpdaterPrintOrder = (orderId: string , value: string | null ) => {
+    updatePOrder?.(orderId, value)
+  }
+
   const buyLabelHandler = async (order: Order) => {
     const shopIdReal = shopId || order.shop_id;
     try {
@@ -99,7 +129,21 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
         onSelectChange(new Set());
       }
     };
+  
 
+  const saveCost = async (value: any, orderId: string) => {
+    const num = Number(value);
+    if (isNaN(num)) {
+      alert("Giá trị không phải là số: " + value);
+      return;
+    }
+
+    try {
+      await updateCostOrder(orderId, value);
+    } catch (e) {
+      console.error(e);
+    }
+  };
   // Kiểm tra trạng thái checkbox "tất cả"
   const isAllSelected = orders.length > 0 && selectList.size === orders.length;
 
@@ -124,8 +168,8 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
               <th className="px-3 py-2 text-left">Order ID</th>
               <th className="px-3 py-2 text-left">Products</th>
               <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Total</th>
-              <th className="px-3 py-2 text-left">Dự kiến nhận được</th>
+              <th className="px-3 py-2 text-left">Tiền</th>
+              {type === "ALL" && <th className="px-3 py-2 text-left">In</th>}
               <th className="px-3 py-2 text-left">Customer</th>
               <th className="px-3 py-2 text-left">Actions</th>
             </tr>
@@ -149,7 +193,7 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
                     </div>
                   </td>
                   <td className="px-3 py-2">
-                    <div className="text-gray-700 font-semibold">{order.shop_name}</div>
+                    {type === "ALL" && <div className="text-gray-700 font-semibold">{order.shop_name}</div>}
                     <div className="text-gray-500 text-xs">ID: {order.id}</div>
                     <div className="text-gray-500 text-xs">
                       Tracking: {order.tracking_number || <span className="text-red-500">Chưa có</span>}
@@ -185,11 +229,41 @@ export default function  OrderTable({ orders, loading, hasMore, onLoadMore, isSe
                     <div className="text-gray-400 text-xs mt-1">Ship: {order.shipping_type}</div>
                   </td>
                   <td className="px-3 py-2 font-semibold">
-                    <span>{order.payment.total_amount} {order.payment.currency}</span>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-gray-800">
+                        <span className="font-bold">Total:</span>{" "}
+                        {order.payment.total_amount} {order.payment.currency}
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        <span className="font-medium">Dự kiến:</span>{" "}
+                        {order.payment_amount} {order.payment.currency}
+                      </p>
+                       <div className="text-gray-600 text-sm">
+                        <span className="font-medium"></span>{" "}
+                        <EditableField
+                          value={`${order?.cost?.toString() || 0 }`}
+                          onSave={(value) => {
+                            saveCost(value, order.id)
+                          }}
+                          label = "Chỉnh cost"
+                          type="number"
+                          fistText="Cost:"
+                        />
+                      </div>
+                    </div>
                   </td>
-                   <td className="px-3 py-2 font-semibold">
-                    <span>{order.payment_amount}</span>
-                  </td>
+
+                  {type === "ALL" &&  <td className="px-3 py-2 font-semibold">
+                    <OptionalSelect
+                      value={order?.printer?.id ?? null}
+                      options={printerOption}
+                      placeholder = "Nhà in"
+                      size={150}
+                      onChange={(value) => {
+                        handlerUpdaterPrintOrder(order.id, value)
+                      }}
+                    />
+                  </td>}
                   <td className="px-3 py-2 text-gray-700">
                     <div className="font-medium">{order.recipient_address.name}</div>
                     <div className="text-xs">{order.recipient_address.phone_number}</div>

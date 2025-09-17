@@ -50,11 +50,13 @@ export interface Order {
     }[];
     postal_code: string;
   };
+  printer: PrintShop;
   status: string;
   shipping_type: string;
   create_time: number;
   line_items: LineItem[];
   is_note : boolean | null;
+  cost: number
 }
 
 export interface LineItem {

@@ -1,16 +1,16 @@
 "use client"
-
-import { exportOrderSelected, getOrderAllShop } from "@/service/order/order-service";
-import { Order, ShopResponse } from "@/service/types/ApiResponse";
+import { exportOrderSelected, getOrderAllShop, updatePrinterOrder } from "@/service/order/order-service";
+import { Order, PrintShop, ShopResponse } from "@/service/types/ApiResponse";
 import { useCallback, useEffect, useRef, useState } from "react";
 import OrderTable from "../_components/OrderTable";
 import MultiSelect, { Option } from "../_components/MultiSelect";
 import { getMyShop } from "@/service/shop/shop-service";
-import { debounce, set } from "lodash";
-import WebSocketClient from "@/lib/webSocketClient";
+import { debounce } from "lodash";
 import { useWebSocket } from "@/Context/WebSocketContext";
 import { IMessage } from "@stomp/stompjs";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
+import ImportDropdown from "../_components/ImportDropdown";
+import { getAllPrinter } from "@/service/print/print-service";
 
 
 const statusOptions = [
@@ -47,6 +47,9 @@ export default function OrderAllShopView() {
     const wsClient = useWebSocket(); 
     const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
     const [exportLoading, setExporting] = useState<boolean>(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [printers, setPrinter] = useState<PrintShop[]>([])
+
 
 
     useEffect(() => {
@@ -77,29 +80,7 @@ export default function OrderAllShopView() {
     }, [status, shipBy, selectedShops]);
 
     useEffect(() => {
-        (async () => {
-            setShopLoading(true);
-            try {
-                const response = await getMyShop();
-
-                const shopsRespone: ShopResponse[] = response.result
-                    ? Array.isArray(response.result)
-                        ? response.result
-                        : [response.result]
-                    : []
-                let optionShops: Option[] = shopsRespone.map(item => ({
-                    value: item.id,
-                    label: item.userShopName
-                }));
-                setShops(optionShops);
-                console.log("Shop data:", response);
-
-            } catch (error) {
-                console.error("Error in OrderInShopComponents:", error);
-            } finally {
-                setShopLoading(false);
-            }
-        })()
+        loadData();
     }, []);
 
     const handlerSearch = async (e: React.FormEvent) => {
@@ -136,6 +117,50 @@ export default function OrderAllShopView() {
 
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadPrinter = async () => {
+        try {
+            const response = await getAllPrinter();
+            console.log(response)
+            const printer: PrintShop[] = response?.result || [];
+            setPrinter(printer)
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    const loadShops = async () => {
+        try {
+            const response = await getMyShop();
+
+            const shopsRespone: ShopResponse[] = response.result
+                ? Array.isArray(response.result)
+                    ? response.result
+                    : [response.result]
+                : []
+            let optionShops: Option[] = shopsRespone.map(item => ({
+                value: item.id,
+                label: item.userShopName
+            }));
+            setShops(optionShops);
+        } catch (error) {
+            console.error("Error in OrderInShopComponents:", error);
+        }
+    }
+
+    const loadData = async () => {
+        try {
+            setShopLoading(true);
+            const [] = await Promise.all([
+                loadPrinter(),
+                loadShops()
+            ]);
+        } catch (error) {
+            console.error("Error when loading data:", error);
+        } finally {
+            setShopLoading(false);
         }
     };
 
@@ -181,6 +206,18 @@ export default function OrderAllShopView() {
         }
     }
 
+    
+    const updadePrinter = async (orderId: string, printerId : string | null) => {
+        try {
+          if(!printerId) printerId ="REMOVE";
+          const response = await updatePrinterOrder(orderId, printerId);
+          setOrders(prev =>prev.map(order => (order.id === orderId ? { ...response.result } : order))); 
+        } catch (e : any) {
+          console.error(e);
+          alert(e.message || "Lỗi")
+        }
+    }
+
     return (
         <div className="bg-white p-4 rounded-lg shadow">
             {/* Header */}
@@ -201,7 +238,10 @@ export default function OrderAllShopView() {
                         >
                             Export
                         </button>
-                      </div>
+                    </div>
+                    <ImportDropdown
+                        printers={printers}
+                    />
 
                     {/* Ship By */}
                     <div className="relative inline-block w-40">
@@ -301,6 +341,9 @@ export default function OrderAllShopView() {
                 isSelectable={true}
                 selectList={selectedOrders}
                 onSelectChange={setSelectedOrders}
+                updatePOrder={updadePrinter}
+                type="ALL"
+                printer={printers}
             />
             <LoadingOverlay show={exportLoading} />
         </div>
