@@ -4,6 +4,7 @@ import React, { Fragment, useRef, useCallback, useEffect, useState } from "react
 import { formatDate, getCategoryPathText, Product } from "@/service/types/ApiResponse";
 import { Copy } from "lucide-react";
 import { debounce } from "lodash";
+import LoadingIndicator from "@/components/UI/LoadingIndicator";
 
 type Props = {
   products: Product[];
@@ -50,14 +51,15 @@ export default function ProductActiveTable({
       console.error("Copy failed", e);
     }
   };
-
+    // Loading indicator component
   return (
     <div
       ref={tableRef}
-      className="relative h-[80vh] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm"
+      className="relative h-full min-h-0 overflow-auto shadow-md rounded-lg bg-white"
+      style={{ scrollBehavior: 'smooth' }}
     >
-      <table className="min-w-full text-sm">
-        <thead className="bg-gray-50 sticky top-0 z-20">
+      <table className="min-w-full text-xs">
+        <thead className="bg-gray-300 sticky top-0 z-20">
           <tr>
             <th className="px-4 py-3 text-left font-bold text-gray-700">STT</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">ID</th>
@@ -146,9 +148,8 @@ export default function ProductActiveTable({
           })}
         </tbody>
       </table>
-
       {loading && (
-        <div className="p-4 text-center text-gray-500 text-sm">Loading more...</div>
+        <LoadingIndicator/>
       )}
     </div>
   );

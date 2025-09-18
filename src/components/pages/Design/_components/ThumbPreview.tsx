@@ -67,28 +67,58 @@ export default function ThumbPreview({
 
       {/* Modal */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <div ref={modalRef} className="relative max-w-[90vw] max-h-[90vh] p-4 rounded-lg z-10" style={{ outline: "none" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setOpen(false)}
+          />
+
+          {/* Modal content */}
+          <div
+            ref={modalRef}
+            className="relative z-10 max-w-[90vw] max-h-[90vh] p-4 rounded-lg bg-white shadow-lg focus:outline-none"
+          >
+            {/* Close button */}
             <button
               onClick={() => setOpen(false)}
-              className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 z-20"
+              className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 transition"
               aria-label="Close preview"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="rounded-md overflow-hidden bg-gray-100 p-2">
+
+            {/* Caption */}
+            {alt && (
+              <p className="mb-2 text-sm text-gray-700 max-w-[80vw] truncate">
+                {alt}
+              </p>
+            )}
+
+            {/* Image */}
+            <div className="rounded-md overflow-hidden bg-gray-100 p-2 flex items-center justify-center">
               <Img
                 src={largeUrl}
                 alt={alt}
-                loader={<div className="w-[80vw] h-[80vh] bg-gray-200 animate-pulse" />}
-                unloader={<div className="w-[80vw] h-[80vh] bg-red-200 flex items-center justify-center">Not exit</div>}
-                style={{ display: "block", maxWidth: "80vw", maxHeight: "80vh", objectFit: "contain" }}
+                loader={
+                  <div className="w-[80vw] h-[80vh] bg-gray-200 animate-pulse" />
+                }
+                unloader={
+                  <div className="w-[80vw] h-[80vh] bg-red-200 flex items-center justify-center">
+                    Not exist
+                  </div>
+                }
+                className="block max-w-[80vw] max-h-[80vh] object-contain"
               />
             </div>
           </div>
         </div>
       )}
+
     </>
   );
 }

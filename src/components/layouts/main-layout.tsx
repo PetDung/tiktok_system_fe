@@ -26,7 +26,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </aside>
 
             {/* MAIN CONTENT */}
-            <main className="flex-1 p-4 overflow-y-auto bg-gray-100">{children}</main>
+            <main className="flex-1 overflow-y-auto bg-gray-100">{children}</main>
           </div>
         </div>
       </WebSocketProvider>

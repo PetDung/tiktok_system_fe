@@ -18,11 +18,9 @@ import { ProductDetails, Sku } from "@/service/types/productDetails";
 import ProductCard from "../_components/ProductCard";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
 import DesignModal, { DesignRequest } from "../_components/AddDesign";
-import DesignModalView from "../_components/DesignModalView";
 import SearchBar from "../_components/SearchBar";
 import SkuTable from "../_components/SkuTable";
 import DesignTable from "../_components/DesignTable";
-import { ThumbPreviewProps } from "../_components/ThumbPreview";
 
 export default function MappingDesignPage() {
   const searchParams = useSearchParams();
@@ -47,7 +45,6 @@ export default function MappingDesignPage() {
 
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [openView, setOpenView] = useState(false);
   const [filters, setFilters] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {

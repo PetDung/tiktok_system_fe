@@ -7,10 +7,11 @@ export type ShopTableProps = {
 
 export default function ShopTable({ data, hanlderClick }: ShopTableProps) {
   return (
-    <div className="p-6 bg-white rounded-2xl shadow-lg">
+    <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col">
       <h2 className="text-xl font-semibold mb-4 text-gray-800">Danh sách Shop</h2>
 
-      <div className="relative h-[80vh] overflow-auto rounded-lg border border-gray-200 shadow-sm">
+      <div  className="flex-1 min-h-0 overflow-auto">
+        <div className="relative h-full overflow-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
             <tr>
@@ -50,6 +51,7 @@ export default function ShopTable({ data, hanlderClick }: ShopTableProps) {
             )}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );

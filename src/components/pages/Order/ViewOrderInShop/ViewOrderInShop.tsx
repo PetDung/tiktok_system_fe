@@ -79,9 +79,9 @@ export default function ViewOrderInShop() {
     }
 
     return (
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3 md:gap-0">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-2 gap-4">
                 <h2 className="text-lg font-semibold text-gray-800">Order List</h2>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -164,14 +164,14 @@ export default function ViewOrderInShop() {
                     </form>
                 </div>
             </div>
-           
-
-            <OrderTable
-                orders={orders}
-                loading={loading}
-                hasMore={!!nextPageToken}
-                onLoadMore={() => fetchOrders(nextPageToken)}
-            />
+            <div className="flex-1 min-h-0 overflow-auto">
+                <OrderTable
+                    orders={orders}
+                    loading={loading}
+                    hasMore={!!nextPageToken}
+                    onLoadMore={() => fetchOrders(nextPageToken)}
+                />
+            </div>
         </div>
     );
 }

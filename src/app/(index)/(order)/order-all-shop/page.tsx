@@ -1,7 +1,10 @@
 import OrderAllShopView from "@/components/pages/Order/OrderAllShop/OrderAllShopView";
-
+import LoadingIndicator from "@/components/UI/LoadingIndicator";
+import { Suspense } from "react";
 export default function ViewOrderAllShopPage() {
   return (
-    <OrderAllShopView/>
+      <Suspense fallback={<LoadingIndicator/>}>
+          <OrderAllShopView/>
+      </Suspense>
   );
 }

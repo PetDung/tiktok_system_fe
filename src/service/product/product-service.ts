@@ -50,7 +50,7 @@ export async function getProductActive(param: GetOrderParam) {
                                     keyword: param.keyword,
                                     page : param.page,
                                     filter: "ACTIVE",
-                                    page_size: param.pageSize || 20
+                                    pageSize: param.pageSize || 20
                                 }
                             }
                         );
@@ -70,9 +70,16 @@ export async function getProductActive(param: GetOrderParam) {
     }
 } 
 
-export async function getAllProductActive() {
+export async function getAllProductActive({startTime, endTime}: {startTime: number | null, endTime : number | null}) {
     try {
-        const response = await axiosClient.get<ApiResponse<Product[]>>("/product/active/all",);
+        const response = await axiosClient.get<ApiResponse<Product[]>>("/product/active/all",
+             {
+                 params: {
+                     start_time: startTime,
+                     end_time: endTime,
+                 }
+             }
+        );
         if (response.data.code === 1000) {
             return response.data; // Assuming the shop data is in the 'data' field
         }

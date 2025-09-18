@@ -28,12 +28,83 @@ export interface Setting {
 }
 
 export interface Return {
-  returnId : string
+  returnId: string;
   returnType: string;
   returnStatus: string;
-  returnReasonText: string;
-  orderId : string;
+  arbitrationStatus?: string;
+  role?: string;
+  returnReason?: string;
+  returnReasonText?: string;
+  shipmentType?: string;
+  handoverMethod?: string;
+  returnTrackingNumber?: string;
+  returnProviderName?: string;
+  returnProviderId?: string;
+  preReturnId?: string;
+  nextReturnId?: string;
+  canBuyerKeepItem?: boolean;
+  returnShippingDocumentType?: string;
+  returnMethod?: string;
+  isCombinedReturn?: boolean;
+  combinedReturnId?: string;
+  sellerProposedReturnType?: string;
+  buyerRejectedPartialRefund?: boolean;
+  updateTime: number;
+  createTime: number;
+  orderId: string;
+
+  refundAmount?: RefundAmount;
+  returnWarehouseAddress?: any;
+  partialRefund?: any;
+  sellerNextActionResponse?: any[];
+  returnLineItems?: ReturnLineItem[];
+  discountAmount?: DiscountAmount[];
+  shippingFeeAmount?: ShippingFeeAmount[];
+  shopId:string;
+  shopName: string;
 }
+export interface RefundAmount {
+  currency: string;
+  refundTotal: number;
+  refundSubtotal: number;
+  refundShippingFee: number;
+  refundTax: number;
+  retailDeliveryFee: number | null;
+  buyerServiceFee: number | null;
+}
+
+export interface ProductImage {
+  url: string;
+  width: number;
+  height: number;
+}
+
+export interface ReturnLineItem {
+  returnLineItemId: string;
+  orderLineItemId: string;
+  skuId: string;
+  skuName: string;
+  productName: string;
+  sellerSku: string | null;
+  productImage: ProductImage;
+  refundAmount: RefundAmount;
+}
+
+export interface DiscountAmount {
+  currency: string;
+  productSellerDiscount: number;
+  shippingFeePlatformDiscount: number;
+  shippingFeeSellerDiscount: number;
+  productPlatformDiscount: number;
+}
+
+export interface ShippingFeeAmount {
+  currency: string;
+  sellerPaidReturnShippingFee: number;
+  platformPaidReturnShippingFee: number;
+  buyerPaidReturnShippingFee: number;
+}
+
 
 export interface Settlement {
   id: string;
@@ -97,6 +168,16 @@ export interface OrderResponse {
     last? : boolean;
     current_page?: number;
 }
+
+
+export interface RefundResponse {
+    total_count: number;
+    next_page_token?: string;
+    orders: Return[];
+    last? : boolean;
+    current_page?: number;
+}
+
 
 export interface ResponsePage<T> {
     total_count: number;

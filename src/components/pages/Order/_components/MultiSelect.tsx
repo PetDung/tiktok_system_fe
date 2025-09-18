@@ -52,7 +52,7 @@ export default function AdvancedMultiSelect({ options, loading = false, onChange
         onClick={() => setOpen(!open)}
       >
         <span className="text-sm text-gray-700">
-          {selected.length > 0 ? `${selected.length} selected` : "Select items..."}
+          {selected.length > 0 ? `${selected.length} selected` : "Select shops"}
         </span>
         <svg
           className={`w-4 h-2 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}

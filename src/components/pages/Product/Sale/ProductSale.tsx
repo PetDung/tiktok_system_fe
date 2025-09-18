@@ -17,6 +17,8 @@ export default function ProductSale() {
   const [productSale, setProductSale] = useState<ProductReport[]>([]);
   const [date, setDate] = useState<DateState>({ startDate: null, endDate: null });
   const [selectProducts, setSelectProducts] = useState<ProductReport[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
 
   /** Convert date -> timestamp UTC (seconds) */
   const toUtcTimestampSeconds = useCallback(
@@ -32,12 +34,15 @@ export default function ProductSale() {
 
   const fetchProductSale = useCallback(
     async (startDate: number | null, endDate: number | null) => {
+      setLoading(true)
       try {
         const response = await getProductSales({ startTime: startDate, endTime: endDate });
         const list = response?.result?.products ?? [];
         setProductSale(list);
       } catch (error) {
         console.error("Fetch product error:", error);
+      }finally{
+          setLoading(false)
       }
     },
     []
@@ -58,10 +63,17 @@ export default function ProductSale() {
   );
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
+    <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3 md:gap-0">
-        <h2 className="text-lg font-semibold text-gray-800">Product Sale</h2>
+        <div className="flex items-center space-x-3">
+          <h2 className="text-xl font-bold text-gray-900">Product Sale</h2>
+          {productSale.length > 0 && (
+            <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+              {productSale.length} / {productSale.length} product
+            </span>
+          )}
+        </div>
         <div className="flex gap-2 items-center">
           <DateRangePicker onChange={handleChangeDate} />
           <ExcelExportButton
@@ -73,8 +85,9 @@ export default function ProductSale() {
             />
         </div>
       </div>
-
-      <ProductSaleTable products={productSale} onSelectionChange={setSelectProducts} />
+      <div className="flex-1 min-h-0 overflow-auto">
+          <ProductSaleTable products={productSale} onSelectionChange={setSelectProducts} loading={loading} />
+      </div>
     </div>
   );
 }
