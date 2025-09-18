@@ -115,7 +115,6 @@ export default function ImportDropdown({ printers }: Props) {
     } else {
       wsPrinters = XLSX.utils.aoa_to_sheet([["No printer data"]]);
     }
-
     // Workbook
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, wsTemplate, "Template");

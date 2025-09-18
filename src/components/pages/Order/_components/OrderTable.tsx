@@ -51,6 +51,7 @@ export default function  OrderTable(
   };
 
   useEffect(()=> {
+    if(type === "ONE") return;
     const options : Option[] = printer.map(item => ({
           value : item.id,
           label : item.name
@@ -226,6 +227,18 @@ export default function  OrderTable(
                       {order.status}
                     </span>
                     {order.status === "CANCELLED" && <div className="text-xs text-red-400 mt-1">Reason: {order.cancel_reason}</div>}
+                    {order.returns && order.returns?.length > 0 && (
+                      <div className="mt-2 rounded-lg text-xs text-red-600">
+                        <a href={`/refund?order_id=${order.id}`}>
+                          <div className="flex items-center">
+                            <span className="font-semibold">Status:</span>
+                            <span>{order.returns?.[0]?.returnType}</span>
+                          </div>
+                        </a>
+                      </div>
+                    )}
+
+
                     <div className="text-gray-400 text-xs mt-1">Ship: {order.shipping_type}</div>
                   </td>
                   <td className="px-3 py-2 font-semibold">
@@ -238,8 +251,12 @@ export default function  OrderTable(
                         <span className="font-medium">Dự kiến:</span>{" "}
                         {order.payment_amount} {order.payment.currency}
                       </p>
-                       <div className="text-gray-600 text-sm">
-                        <span className="font-medium"></span>{" "}
+                       <p className="text-gray-600 text-sm">
+                        <span className="font-medium">Thực tế:</span>{" "}
+                        {order?.settlement?.settlement_amount || 0} {order.payment.currency}
+                      </p>
+
+                      <div className="text-gray-600 text-sm">
                         <EditableField
                           value={`${order?.cost?.toString() || 0 }`}
                           onSave={(value) => {

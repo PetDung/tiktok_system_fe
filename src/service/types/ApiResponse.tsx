@@ -27,6 +27,24 @@ export interface Setting {
   driverId: string;
 }
 
+export interface Return {
+  returnId : string
+  returnType: string;
+  returnStatus: string;
+  returnReasonText: string;
+  orderId : string;
+}
+
+export interface Settlement {
+  id: string;
+  currency: string | null;
+  fee_and_tax_amount: number;
+  order_create_time: number;
+  revenue_amount: number;
+  settlement_amount: number;
+  shipping_cost_amount: number;
+}
+
 export interface Order {
   id: string;
   label : string | null;
@@ -38,6 +56,7 @@ export interface Order {
     currency: string;
     total_amount: string;
   };
+  settlement?: Settlement  | null; 
   payment_amount: number | null
   recipient_address: {
     name: string;
@@ -57,6 +76,7 @@ export interface Order {
   line_items: LineItem[];
   is_note : boolean | null;
   cost: number
+  returns: Return[] | null;
 }
 
 export interface LineItem {
