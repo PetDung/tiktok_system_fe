@@ -43,13 +43,13 @@ export default function ThumbPreview({
     <>
       <div className="relative inline-block" style={{ width: size, height: size }}>
         {/* gray background */}
-        <div className="w-full h-full bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+        <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
           <Img
             src={thumbUrl}
             alt={alt}
+            className="w-full h-full object-contain" // ✅ giữ tỉ lệ, không crop
             loader={<div className="w-full h-full bg-gray-200 animate-pulse" />}
-            unloader={<div className="w-full h-full bg-red-200 flex items-center justify-center">Not exit</div>}
-            style={{ objectFit: "cover", display: "block", width: "100%", height: "100%" }}
+            unloader={<div className="w-full h-full bg-red-200 flex items-center justify-center">Not exist</div>}
           />
         </div>
 
@@ -64,6 +64,7 @@ export default function ThumbPreview({
           </div>
         </button>
       </div>
+
 
       {/* Modal */}
       {open && (

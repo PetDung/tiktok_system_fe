@@ -60,7 +60,7 @@ const ReturnsDashboard: React.FC<ReturnsDashboardProps> = ({ data, search, loadi
     }, [data.current_page, data.last, loading, keyword, search, isFetchingMore]);
 
     return (
-        <div className="max-w-7xl mx-auto bg-gray-100">
+        <div className="p-4 mx-auto bg-gray-100">
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Returns & Refunds</h1>
@@ -69,7 +69,7 @@ const ReturnsDashboard: React.FC<ReturnsDashboardProps> = ({ data, search, loadi
                 </p>
             </div>
             {/* Stats */}
-            <div className="flex  gap-4 pb-8 sticky top-0 bg-gray-100 z-50">
+            <div className="flex  gap-4 pb-8 sticky top-0 bg-gray-100 z-30">
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
                     <h3 className="text-sm font-medium text-gray-500">Total Returns</h3>
                     <p className="text-2xl font-bold text-gray-900">{data.total_count}</p>
