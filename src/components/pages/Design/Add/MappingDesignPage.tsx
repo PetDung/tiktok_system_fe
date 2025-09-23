@@ -28,8 +28,6 @@ export default function MappingDesignPage() {
   const shopIdParam = searchParams.get("shop_id") || "";
   const skuIdParam = searchParams.get("sku_id") || "";
 
-
-
   const [productId, setProductId] = useState(productIdParam);
   const [shop, setShop] = useState(shopIdParam);
   const [skuSearch, setSkuSearch] = useState(skuIdParam);
@@ -45,7 +43,9 @@ export default function MappingDesignPage() {
 
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [filters, setFilters] = useState<{ [key: string]: string }>({});
+  
+  // Updated filters to support multiple values per attribute
+  const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
 
   useEffect(() => {
     (async () => {
@@ -83,6 +83,10 @@ export default function MappingDesignPage() {
       });
       setSkus(response.result.skus);
       setProductDetails(response.result);
+      
+      // Reset filters when searching new product to avoid confusion
+      setFilters({});
+      setSelectedSkus([]);
     } catch (error: any) {
       alert(error);
     } finally {
@@ -115,7 +119,14 @@ export default function MappingDesignPage() {
       const response = await mappingDesign(payload);
       console.log(response);
       await handleSearch();
-      alert("Mapping thành công");
+      
+      // Show success message with more details
+      const successMessage = `Mapping thành công!\n- SKUs: ${selectedSkus.length}\n- Design: ${designs.find(d => d.id === selectedDesign)?.name || 'N/A'}`;
+      alert(successMessage);
+      
+      // Reset selections after successful mapping
+      setSelectedSkus([]);
+      setSelectedDesign("");
     } catch (error) {
       console.error(error);
       alert("Có lỗi xảy ra: " + error);
@@ -128,26 +139,50 @@ export default function MappingDesignPage() {
     try {
       await createDesign(data);
       await fetchDesign();
+      alert("Thêm design thành công!");
     } catch (error) {
       console.error(error);
+      alert("Có lỗi khi thêm design: " + error);
     }
   };
 
   const handleDeleteDesign = async (designId: string) => {
-    if (!confirm("Bạn có chắc muốn xóa design này?")) return;
+    const designName = designs.find(d => d.id === designId)?.name || 'design này';
+    if (!confirm(`Bạn có chắc muốn xóa "${designName}"?`)) return;
+    
+    setLoading(true);
     try {
       const response = await deleteDesign(designId);
       if (response.code === 1000) {
         alert("Xóa design thành công");
         await fetchDesign();
+        
+        // Clear selected design if it was the deleted one
+        if (selectedDesign === designId) {
+          setSelectedDesign("");
+        }
       }
     } catch (error) {
       console.error(error);
+      alert("Có lỗi khi xóa design: " + error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Helper function to get filter summary for display
+  const getFilterSummary = () => {
+    const activeFilters = Object.entries(filters).filter(([_, values]) => values.length > 0);
+    if (activeFilters.length === 0) return "";
+    
+    const totalFilters = activeFilters.reduce((sum, [_, values]) => sum + values.length, 0);
+    return `(${totalFilters} bộ lọc đang áp dụng)`;
+  };
+
   return (
-    <div className="flex flex-col items-center p-6">
-      <div className="w-full h-[85vh] bg-white rounded-2xl shadow p-6 flex flex-col">
+    <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col overflow-hidden">
+      {/* Search Bar - Fixed height */}
+      <div className="flex-shrink-0 mb-4">
         <SearchBar
           productId={productId}
           setProductId={setProductId}
@@ -155,44 +190,55 @@ export default function MappingDesignPage() {
           shops={shops}
           setShop={setShop}
           handleSearch={handleSearch}
-        /> 
+          handleSubmit={handleSubmit}
+        />
+      </div>
 
+      {/* Product Card - Fixed height */}
+      <div className="flex-shrink-0 mb-2">
         <ProductCard productDetails={productDetails} />
+      </div>
+      {/* Main Content Grid - Takes remaining space */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-2 gap-6 h-full">
+          {/* SKU Table */}
+          <div className="h-full overflow-hidden">
+            <div className="h-full flex flex-col">
+              <div className="flex-1 min-h-0">
+                <SkuTable
+                  skus={skus}
+                  skuSearch={skuSearch}
+                  setSkuSearch={setSkuSearch}
+                  filters={filters}
+                  setFilters={setFilters}
+                  selectedSkus={selectedSkus}
+                  setSelectedSkus={setSelectedSkus}
+                  productId={productId}
+                />
+              </div>
+            </div>
+          </div>
 
-        <div className="grid grid-cols-2 gap-6 flex-1 overflow-hidden mt-2">
-          <SkuTable
-            skus={skus}
-            skuSearch={skuSearch}
-            setSkuSearch={setSkuSearch}
-            filters={filters}
-            setFilters={setFilters}
-            selectedSkus={selectedSkus}
-            setSelectedSkus={setSelectedSkus}
-            productId={productId}
-          />
-
-          <DesignTable
-            designs={designs}
-            designSearch={designSearch}
-            setDesignSearch={setDesignSearch}
-            selectedDesign={selectedDesign}
-            setSelectedDesign={setSelectedDesign}
-            handleDeleteDesign={handleDeleteDesign}
-            setOpen={setOpen}
-          />
-        </div>
-
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={handleSubmit}
-            className="bg-green-600 text-white px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-green-700"
-          >
-            <Upload size={18} />
-            Submit
-          </button>
+          {/* Design Table */}
+          <div className="h-full overflow-hidden">
+            <div className="h-full flex flex-col">
+              <div className="flex-1 min-h-0">
+                <DesignTable
+                  designs={designs}
+                  designSearch={designSearch}
+                  setDesignSearch={setDesignSearch}
+                  selectedDesign={selectedDesign}
+                  setSelectedDesign={setSelectedDesign}
+                  handleDeleteDesign={handleDeleteDesign}
+                  setOpen={setOpen}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Modals and Overlays */}
       <LoadingOverlay show={loading} />
       <DesignModal
         open={open}

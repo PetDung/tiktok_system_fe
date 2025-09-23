@@ -61,7 +61,7 @@ const EmptyState = ({ hasSearch, onAddClick }: { hasSearch: boolean; onAddClick:
       {hasSearch ? 'Không tìm thấy design' : 'Chưa có design nào'}
     </h3>
     <p className="text-gray-500 mb-6 max-w-sm">
-      {hasSearch 
+      {hasSearch
         ? 'Hãy thử tìm kiếm với từ khóa khác hoặc tạo design mới.'
         : 'Bắt đầu bằng cách tạo design đầu tiên của bạn.'
       }
@@ -79,11 +79,11 @@ const EmptyState = ({ hasSearch, onAddClick }: { hasSearch: boolean; onAddClick:
 );
 
 // Design card for grid view
-const DesignCard = React.memo(({ 
-  design, 
-  isSelected, 
-  onSelect, 
-  onDelete 
+const DesignCard = React.memo(({
+  design,
+  isSelected,
+  onSelect,
+  onDelete
 }: {
   design: Design;
   isSelected: boolean;
@@ -91,22 +91,20 @@ const DesignCard = React.memo(({
   onDelete: (id: string) => void;
 }) => {
   const [showMenu, setShowMenu] = useState(false);
-  
+
   return (
-    <div 
-      className={`relative group bg-white rounded-xl border-2 transition-all duration-200 hover:shadow-lg cursor-pointer ${
-        isSelected 
-          ? 'border-blue-500 shadow-md ring-2 ring-blue-200' 
+    <div
+      className={`relative group bg-white rounded-xl border-2 transition-all duration-200 hover:shadow-lg cursor-pointer ${isSelected
+          ? 'border-blue-500 shadow-md ring-2 ring-blue-200'
           : 'border-gray-200 hover:border-gray-300'
-      }`}
+        }`}
       onClick={() => onSelect(design.id)}
     >
       {/* Selection indicator */}
-      <div className={`absolute top-3 left-3 z-10 w-5 h-5 rounded-full border-2 transition-all duration-200 ${
-        isSelected 
-          ? 'bg-blue-500 border-blue-500' 
+      <div className={`absolute top-3 left-3 z-10 w-5 h-5 rounded-full border-2 transition-all duration-200 ${isSelected
+          ? 'bg-blue-500 border-blue-500'
           : 'bg-white border-gray-300 group-hover:border-blue-400'
-      }`}>
+        }`}>
         {isSelected && (
           <svg className="w-3 h-3 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -125,10 +123,10 @@ const DesignCard = React.memo(({
         >
           <MoreVertical className="w-4 h-4 text-gray-600" />
         </button>
-        
+
         {showMenu && (
           <>
-            <div 
+            <div
               className="fixed inset-0 z-10"
               onClick={() => setShowMenu(false)}
             />
@@ -190,7 +188,7 @@ function DesignTableBase({
 
   const filteredAndSortedDesigns = useMemo(() => {
     let filtered = designs;
-    
+
     // Filter by search
     const query = designSearch.toLowerCase();
     if (query) {
@@ -205,7 +203,7 @@ function DesignTableBase({
     if (debouncedRef.current) {
       window.clearTimeout(debouncedRef.current);
     }
-    
+
     setIsLoading(true);
     debouncedRef.current = window.setTimeout(() => {
       setDesignSearch(value);
@@ -235,9 +233,9 @@ function DesignTableBase({
   const hasResults = filteredAndSortedDesigns.length > 0;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-auto relative">
+    <div className="bg-white flex flex-col shadow-sm border border-gray-200 h-full relative">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 bg-gray-200 sticky top-0 z-30">
+      <div className="p-6 border-b border-gray-200 bg-gray-200 flex-shrink-0">
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
@@ -268,21 +266,19 @@ function DesignTableBase({
             <div className="flex border border-gray-300 rounded-lg p-1 bg-gray-50">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === 'grid' 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                className={`p-2 rounded transition-colors ${viewMode === 'grid'
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 <Grid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('table')}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === 'table' 
-                    ? 'bg-white text-blue-600 shadow-sm' 
+                className={`p-2 rounded transition-colors ${viewMode === 'table'
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -300,8 +296,8 @@ function DesignTableBase({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-6">
+      {/* Content - Chiếm phần còn lại và có scroll */}
+      <div className="flex-1 min-h-0 p-2 overflow-y-auto">
         {!hasResults ? (
           <EmptyState hasSearch={hasSearch} onAddClick={openAdd} />
         ) : viewMode === 'grid' ? (
@@ -318,22 +314,13 @@ function DesignTableBase({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Chọn</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Hình ảnh</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Tên Design</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
+            <table className="w-full min-w-[600px]">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {filteredAndSortedDesigns.map((design, index) => (
-                  <tr 
-                    key={design.id} 
-                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                      selectedDesign === design.id ? 'bg-blue-50' : ''
-                    }`}
+                  <tr
+                    key={design.id}
+                    className={`hover:bg-gray-50 transition-colors ${selectedDesign === design.id ? 'bg-blue-50' : ''
+                      }`}
                   >
                     <td className="py-4 px-4">
                       <label className="flex items-center cursor-pointer">
@@ -347,7 +334,7 @@ function DesignTableBase({
                       </label>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                         <ThumbPreview
                           thumbUrl={getDrivePreviewUrl(design)}
                           alt={design.name}
