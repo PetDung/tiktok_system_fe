@@ -130,7 +130,7 @@ export const updateCostOrder = async (orderId: string, costNumber : number) => {
 export const exportOrderSelected = async (param: { orderIds: string[]}) => {
   try {
     const response = await axiosClient.get<ApiResponse<any>>(
-      `/webhook/test`,
+      `/order/export`,
       {
         params: {
           orderIds: param.orderIds.join(',')

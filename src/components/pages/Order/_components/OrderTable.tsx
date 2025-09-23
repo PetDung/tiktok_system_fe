@@ -267,8 +267,8 @@ export default function OrderTable(
                   </td>
                   <td className="px-1 py-1 text-xs">
                     {type === "ALL" && <div className="text-gray-800 font-bold mb-1">{order.shop_name}</div>}
-                    <div className="text-gray-600 text-sm font-medium">ID: {order.id}</div>
-                    <div className="text-gray-500 text-sm">
+                    <div className="text-gray-600 font-medium">ID: {order.id}</div>
+                    <div className="text-gray-500">
                       Tracking: {order.tracking_number || <span className="text-red-500 font-medium">Chưa có</span>}
                     </div>
                     <div className="text-gray-400 text-xs mt-1">{formatDate(order.create_time)}</div>
@@ -281,7 +281,7 @@ export default function OrderTable(
                       handleShowProducts(order.line_items, temp);
                     }}
                   >
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 w-56">
                       {order.line_items.map((item, i) => (
                         <div key={i} className="relative group">
                           <img
@@ -295,7 +295,7 @@ export default function OrderTable(
                   </td>
                   <td className="px-1 py-1">
                     <span
-                      className={`px-1 py-1 rounded-full text-white shadow-sm text-xs ${
+                      className={`px-2 py-1 rounded-full text-white shadow-sm text-[10px] ${
                         order.status === "CANCELLED" ? "bg-red-500" : 
                         order.status === "COMPLETED" ? "bg-green-500" :
                         order.status === "DELIVERED" ? "bg-blue-500" :
@@ -312,7 +312,7 @@ export default function OrderTable(
                     {order.returns && order.returns?.length > 0 && (
                       <div className="mt-2 rounded-lg text-xs text-red-600">
                         <a href={`/refund?order_id=${order.id}`} className="underline hover:text-red-800 transition-colors" target="_blank">
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center">
                             <span className="font-semibold">Status:</span>
                             <span>{order.returns?.[0]?.returnType}</span>
                           </div>
@@ -324,7 +324,7 @@ export default function OrderTable(
                     </div>
                   </td>
                   <td className="px-1 py-1">
-                    <div className="space-y-1">
+                    <div>
                       <p className="text-gray-800 font-bold text-xs">
                         <span className="text-gray-600">Total:</span>{" "}
                         {order.payment.total_amount} {order.payment.currency}
@@ -362,7 +362,7 @@ export default function OrderTable(
                   )}
                   
                   <td className="px-1 py-1 text-gray-700">
-                    <div className="space-y-1">
+                    <div>
                       <div className="font-semibold text-gray-800">{order.recipient_address.name}</div>
                       <div className="text-xs text-gray-600">{order.recipient_address.phone_number}</div>
                       <div className="text-xs text-gray-500">{order.recipient_address.address_detail}</div>
@@ -374,31 +374,31 @@ export default function OrderTable(
                   </td>
                   
                   <td className="px-1 py-1">
-                    <div className="space-y-2">
+                    <div className="space-y-2 items-center">
                       {isBuyLabel(order) && (
                         <button
                           onClick={(e) => { e.stopPropagation(); buyLabelHandler(order); }}
-                          className="bg-purple-600 hover:bg-purple-700 active:bg-purple-800 transition-all text-white px-2 py-2 rounded-lg text-sm font-medium w-full shadow-sm hover:shadow-md"
+                          className="bg-purple-600 hover:bg-purple-700 active:bg-purple-800 transition-all text-white px-1 py-1 text-[10px] rounded-lg font-medium w-full shadow-sm hover:shadow-md"
                         >
                           Create Label
                         </button>
                       )}
                       {isAddTrack(order) && (
-                        <button className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-all text-white px-2 py-2 rounded-lg text-sm font-medium w-full shadow-sm hover:shadow-md">
+                        <button className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-all text-white px-1 py-1 text-[10px] rounded-lg font-medium w-full shadow-sm hover:shadow-md">
                           Tracking
                         </button>
                       )}
                       {isGetLabel(order) && (
                         <button
                           onClick={(e) => { e.stopPropagation(); viewLabelHandler(order); }}
-                          className="bg-green-600 hover:bg-green-700 active:bg-green-800 transition-all text-white px-2 py-2 rounded-lg text-sm font-medium w-full shadow-sm hover:shadow-md"
+                          className="bg-green-600 hover:bg-green-700 active:bg-green-800 transition-all text-white px-1 py-1 text-[10px] rounded-lg font-medium w-full shadow-sm hover:shadow-md"
                         >
                           Get Label
                         </button>
                       )}
                     </div>
                     {order.is_note && (
-                      <span className="absolute top-2 right-2 h-6 w-4 bg-red-500 rounded-tr-lg rounded-bl-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                      <span className="absolute top-0 right-2 h-4 w-4 bg-red-500 rounded-bl-lg flex items-center justify-center text-white text-xs font-bold shadow-sm">
                         !
                       </span>
                     )}

@@ -129,7 +129,7 @@ export default function ImportDropdown({ printers }: Props) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border transition bg-blue-700 text-white border-gray-300"
+        className="inline-flex items-center px-2 py-2 text-xs font-medium rounded-lg border transition bg-blue-700 text-white border-gray-300"
       >
         Nhập cost
         <ChevronDown className="ml-2 h-4 w-4" />
@@ -140,13 +140,13 @@ export default function ImportDropdown({ printers }: Props) {
         <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50">
           <button
             onClick={handleDownloadTemplate}
-            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+            className="w-full text-left px-2 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
           >
             <Download /> Tải template
           </button>
           <button
             onClick={handleUploadClick}
-            className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className="flex items-center w-full text-leftpx-2 py-2 text-xs text-gray-700 hover:bg-gray-100"
           >
             <Upload /> Import file
           </button>

@@ -57,7 +57,14 @@ export default function ActiveProductComponent() {
         const response = await getProductActive(params);
         const list = response?.result?.products ?? [];
         setIsLast(response?.result?.last ?? true);
-        setProducts((prev) => (append ? [...prev, ...list] : list));
+        setProducts((prev) => {
+          if (!append) return list;
+
+          const existingIds = new Set(prev.map(p => p.id));
+          const uniqueNew = list.filter(p => !existingIds.has(p.id));
+
+          return [...prev, ...uniqueNew];
+        });
         setTotalOrders(response.result.totalCount)
       } catch (error) {
         console.error("Fetch product error:", error);

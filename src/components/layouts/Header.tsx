@@ -24,7 +24,7 @@ export default function Header({ collapsed, setCollapsed, isMobile, sidebarOpen 
       {/* Menu Toggle Button */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="group mr-3 p-2 rounded-lg bg-transparen transition-all duration-200 hover:border hover:bg-black/15"
+        className="group mr-3 p-2 rounded-lg bg-transparen transition-all duration-200 hover:bg-black/15"
         aria-label={isMobile ? (sidebarOpen ? "Close menu" : "Open menu") : (collapsed ? "Expand sidebar" : "Collapse sidebar")}
       >
         {isMobile ? (

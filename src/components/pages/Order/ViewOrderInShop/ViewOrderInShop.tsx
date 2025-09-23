@@ -19,8 +19,8 @@ const statusOptions = [
 ];
 
 const shipTypeOption = [
-    {value: "TIKTOK", label :"Tik tok"},
-    {value: "SELLER", label :"Seller"}
+    { value: "TIKTOK", label: "Tik tok" },
+    { value: "SELLER", label: "Seller" }
 ]
 
 export default function ViewOrderInShop() {
@@ -30,8 +30,8 @@ export default function ViewOrderInShop() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [nextPageToken, setNextPageToken] = useState<string>("");
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<string> ("");
-    const [shipBy, setShipBy] = useState<string> ("");
+    const [status, setStatus] = useState<string>("");
+    const [shipBy, setShipBy] = useState<string>("");
     const [orderId, setOrderId] = useState<string>("");
 
     useEffect(() => {
@@ -42,9 +42,9 @@ export default function ViewOrderInShop() {
         fetchOrders("");
     }, [shopId, status, shipBy]);
 
-    const handlerSearch = async () =>{
+    const handlerSearch = async () => {
 
-        if(orderId && is18Digit(orderId) || !orderId){
+        if (orderId && is18Digit(orderId) || !orderId) {
             await fetchOrders("");
             return;
         }
@@ -56,11 +56,18 @@ export default function ViewOrderInShop() {
         setLoading(true);
         try {
             const response = await getOrderInShop({ shopId, nextPageToken: pageToken, status: status, shipping: shipBy, orderId: orderId });
-            if(!pageToken) {
+            if (!pageToken) {
                 setOrders(response?.result?.orders || []);
-            }else{
+            } else {
                 if (response?.result?.orders) {
-                    setOrders(prev => [...prev, ...(response?.result?.orders || [])]);
+                    setOrders(prev => {
+                        // Tạo set các id hiện có
+                        const existingIds = new Set(prev.map(o => o.id));
+                        // Lọc những order mới chưa có trong set
+                        const uniqueNewOrders = response?.result?.orders.filter(o => !existingIds.has(o.id));
+                        // Trả về mảng kết hợp
+                        return [...prev, ...uniqueNewOrders];
+                    });
                 }
             }
             setNextPageToken(response.result?.next_page_token || "");
@@ -68,13 +75,13 @@ export default function ViewOrderInShop() {
 
         } catch (error: any) {
             alert(error)
-    
+
         } finally {
             setLoading(false);
         }
     };
 
-    function is18Digit(str : string) {
+    function is18Digit(str: string) {
         return /^\d{18}$/.test(str);
     }
 

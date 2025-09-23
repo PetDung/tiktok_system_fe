@@ -98,7 +98,7 @@ function MenuItemComponent({
   };
 
   const getItemClasses = () => {
-    const baseClasses = "group relative flex items-center w-full rounded-lg transition-all duration-200";
+    const baseClasses = "group relative flex items-center flex-1 rounded-lg transition-all duration-200";
     const paddingClasses = collapsed ? "p-2 justify-center" : `px-3 py-2.5 ${level > 0 ? `ml-${level * 2}` : ''}`;
     
     if (item.disabled) {
@@ -106,7 +106,7 @@ function MenuItemComponent({
     }
     
     if (isActive) {
-      return `${baseClasses} ${paddingClasses} bg-orange-300 text-white shadow-lg`;
+      return `${baseClasses} ${paddingClasses} bg-orange-600/100 text-white shadow-lg`;
     }
     
     if (hasActiveDescendant) {
@@ -117,7 +117,7 @@ function MenuItemComponent({
   };
 
   return (
-    <li>
+    <li className="flex flex-col">
       <button
         onClick={handleClick}
         disabled={item.disabled}

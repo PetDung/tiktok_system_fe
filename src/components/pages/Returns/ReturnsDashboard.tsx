@@ -68,35 +68,35 @@ const ReturnsDashboard: React.FC<ReturnsDashboardProps> = ({ data, search, loadi
                     Manage and track all return requests and refunds
                 </p>
             </div>
-            {/* Stats */}
-            <div className="flex  gap-4 pb-8 sticky top-0 bg-gray-100 z-30">
+            {/* Status */}
+            <div className="flex flex-wrap gap-4 pb-8 sticky top-0 bg-gray-100 z-30">
+                {/* Total Returns */}
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
                     <h3 className="text-sm font-medium text-gray-500">Total Returns</h3>
                     <p className="text-2xl font-bold text-gray-900">{data.total_count}</p>
                 </div>
+
+                {/* Sort By */}
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Sort By
-                        </label>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as 'date' | 'amount')}
-                            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="date">Date</option>
-                            <option value="amount">Refund Amount</option>
-                        </select>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as 'date' | 'amount')}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="date">Date</option>
+                        <option value="amount">Refund Amount</option>
+                    </select>
                 </div>
+
+                {/* Search */}
                 <div className="bg-white flex-1 p-6 rounded-lg border border-gray-200">
-                    {/* Search box */}
                     <form
                         onSubmit={(e) => {
-                            e.preventDefault(); // chặn reload
+                            e.preventDefault();
                             search(0, keyword);
                         }}
-                        className="mt-4 flex items-center gap-2"
+                        className="flex gap-2"
                     >
                         <input
                             type="text"
@@ -114,6 +114,7 @@ const ReturnsDashboard: React.FC<ReturnsDashboardProps> = ({ data, search, loadi
                     </form>
                 </div>
             </div>
+
 
 
             {/* Orders Grid */}
