@@ -11,6 +11,7 @@ export type GetOrderParam = {
     orderId? : string;
     page?: number;
     shopIds?: string[];
+    printStatus? : string
 }
 
 export const getOrderCantPrint = async (param : GetOrderParam) => {
@@ -22,7 +23,8 @@ export const getOrderCantPrint = async (param : GetOrderParam) => {
           page : param.page,
           shop_id: param.shopId,
           order_id : param.orderId,
-          shop_ids: param.shopIds?.join(',') || ''
+          shop_ids: param.shopIds?.join(',') || '',
+          print_status : param.printStatus
         }
       }
     );

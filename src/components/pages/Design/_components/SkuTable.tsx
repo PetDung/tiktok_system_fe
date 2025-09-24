@@ -4,7 +4,6 @@ import { Sku } from "@/service/types/productDetails";
 import { getAllDesignSkusAndProduct, removeSkusDesign, SkuDesignMap } from "@/service/design/design-service";
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import ThumbPreview from "./ThumbPreview";
-import { getDrivePreviewUrl } from "./DesignTable";
 
 interface Props {
   skus: Sku[];
@@ -475,7 +474,7 @@ export default function SkuTable({
                         <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                           {hasDesign(sku.id) ? (
                             <ThumbPreview
-                              thumbUrl={getDrivePreviewUrl(designMap[sku.id] || "")}
+                              thumbUrl={designMap[sku.id].thumbnail || ""}
                               alt={designMap[sku.id]?.name || ""}
                               size={64}
                             />

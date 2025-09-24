@@ -1,11 +1,14 @@
-import { LineItem } from "@/service/types/ApiResponse";
+import { LineItem, Order } from "@/service/types/ApiResponse";
 import OrderItemCard from "./OrderItemCard";
 import { X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Attribute, AttributeFull } from "./TablOrderPrint";
+import ModalDesignAdd from "./ModalDesignAdd";
 
 type ModalProps = {
     onClose: () => void;
-    orderItems : LineItem [];
-    names : string[];
+    order:  Order | null;
+    attribute: AttributeFull | null;
 };
 
 export type LineItemHasQuantity = {
@@ -13,20 +16,35 @@ export type LineItemHasQuantity = {
     quantity : number
 }
 
-export default function OrderItemModalView({onClose, orderItems,names =[] }: ModalProps) {
+export default function OrderItemModalView({onClose, order, attribute }: ModalProps) {
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectItem, setSelectItem] = useState<LineItem | null>(null);
     
-    const lineItemsWithQuantityMap: Record<string, LineItemHasQuantity> = {};
-    orderItems.forEach((item) => {
-        if (lineItemsWithQuantityMap[item.sku_id]) {
-            lineItemsWithQuantityMap[item.sku_id].quantity += 1;
-        } else {
-            lineItemsWithQuantityMap[item.sku_id] = { lineItem: item, quantity: 1 };
+    const lineItemsWithQuantity: LineItemHasQuantity[] = useMemo(() => {
+        if(!order) return []
+        const lineItemsWithQuantityMap: Record<string, LineItemHasQuantity> = {};
+        order.line_items.forEach((item) => {
+            if (lineItemsWithQuantityMap[item.sku_id]) {
+                lineItemsWithQuantityMap[item.sku_id].quantity += 1;
+            } else {
+                lineItemsWithQuantityMap[item.sku_id] = { lineItem: item, quantity: 1 };
+            }
+        });
+        return Object.values(lineItemsWithQuantityMap);
+    }, [order])
+
+    useEffect(() => {
+        if (order && selectItem) {
+            const updated = order.line_items.find(li => li.id === selectItem.id);
+            if (updated) setSelectItem(updated);
         }
-    });
+    }, [order]);
 
-    const lineItemsWithQuantity: LineItemHasQuantity[] = Object.values(lineItemsWithQuantityMap);
-
-
+    const openModalDesignAdd = (item : LineItem)=>{
+        setIsModalOpen(true)
+        setSelectItem(item)
+    }
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-white rounded-lg shadow-lg w-[700px] h-[90vh] overflow-auto">
@@ -44,11 +62,24 @@ export default function OrderItemModalView({onClose, orderItems,names =[] }: Mod
                 {/* Content */}
                 <div className="p-6 space-y-6">
                     {lineItemsWithQuantity.map((item, idx) => (
-                        <OrderItemCard names={names} key={item.lineItem.id}  item={item}  />
+                        <OrderItemCard 
+
+                            openAddDesign={openModalDesignAdd}
+                            attribute={attribute} 
+                            key={item.lineItem.id}  
+                            item={item}  
+                        />
                     ))}
                 </div>
 
             </div>
+            {
+                isModalOpen && 
+                <ModalDesignAdd
+                    item={selectItem}
+                    onClose={() =>setIsModalOpen(false)}
+                />
+            }
         </div>
     );
 }

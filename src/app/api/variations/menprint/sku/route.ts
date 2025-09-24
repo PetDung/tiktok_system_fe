@@ -5,7 +5,11 @@ import axios from "axios";
 export async function GET(req: NextRequest) {
   try {
     const page = req.nextUrl.searchParams.get("page") || 1;
-    const response = await axios.get(`https://pubapi.menprint.com/api/v3/products?limit=100&page=${page}`, {
+    const product_code = req.nextUrl.searchParams.get("product_code") || 1;
+    const response = 
+      await axios.get(
+        `https://pubapi.menprint.com/api/v3/skus/:product_code?product_code=${product_code}&limit=100&page=${page}`,
+     {
       headers: {
         "Authorization":process.env.PUB_TOKEN,
         "Content-Type": "application/json",

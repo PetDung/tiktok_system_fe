@@ -170,14 +170,6 @@ export default function MappingDesignPage() {
     }
   };
 
-  // Helper function to get filter summary for display
-  const getFilterSummary = () => {
-    const activeFilters = Object.entries(filters).filter(([_, values]) => values.length > 0);
-    if (activeFilters.length === 0) return "";
-    
-    const totalFilters = activeFilters.reduce((sum, [_, values]) => sum + values.length, 0);
-    return `(${totalFilters} bộ lọc đang áp dụng)`;
-  };
 
   return (
     <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col overflow-hidden">

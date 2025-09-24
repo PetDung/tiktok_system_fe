@@ -17,39 +17,6 @@ interface Props {
 }
 
 type ViewMode = 'table' | 'grid';
-type SortBy = 'name' | 'date' | 'none';
-
-function getPreviewImage(design: Design): string {
-  return (
-    design.frontSide ||
-    design.backSide ||
-    design.leftSide ||
-    design.rightSide ||
-    ""
-  );
-}
-
-export function getFileIdFromDriveLink(driveLink: string): string {
-  const fileIdMatch = driveLink.match(/[-\w]{25,}/);
-  const fileId = fileIdMatch ? fileIdMatch[0] : driveLink;
-  return fileId;
-}
-
-export function getDrivePreviewUrl(design: Design): string {
-  const driveLink = getPreviewImage(design);
-  const fileId = getFileIdFromDriveLink(driveLink);
-  const basUrl = process.env.NEXT_PUBLIC_API_URL;
-  return `${basUrl}/files/thumb?id=${fileId}`;
-}
-
-// Loading skeleton component
-const SkeletonCard = () => (
-  <div className="animate-pulse">
-    <div className="bg-gray-200 rounded-lg h-32 mb-3"></div>
-    <div className="bg-gray-200 rounded h-4 mb-2"></div>
-    <div className="bg-gray-200 rounded h-3 w-2/3"></div>
-  </div>
-);
 
 // Empty state component
 const EmptyState = ({ hasSearch, onAddClick }: { hasSearch: boolean; onAddClick: () => void }) => (
@@ -151,7 +118,7 @@ const DesignCard = React.memo(({
       {/* Image */}
       <div className="aspect-square p-4 pb-2">
         <ThumbPreview
-          thumbUrl={getDrivePreviewUrl(design)}
+          thumbUrl={design.thumbnail || ""}
           alt={design.name}
           size={100}
         />
@@ -336,7 +303,7 @@ function DesignTableBase({
                     <td className="py-4 px-4">
                       <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                         <ThumbPreview
-                          thumbUrl={getDrivePreviewUrl(design)}
+                          thumbUrl={design.thumbnail || ""}
                           alt={design.name}
                           size={150}
                         />

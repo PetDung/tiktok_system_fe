@@ -148,6 +148,7 @@ export interface Order {
   is_note : boolean | null;
   cost: number
   returns: Return[] | null;
+  print_status: string;
 }
 
 export interface LineItem {
@@ -159,6 +160,8 @@ export interface LineItem {
   sku_name : string;
   sale_price: string;
   currency: string;
+  sku_print : string | null;
+  design: Design | null;
 }
 
 export interface OrderResponse {
@@ -260,12 +263,13 @@ export interface Design {
   backSide?: string;
   leftSide?: string;
   rightSide?: string;
-  finalUrl? : string;
+  thumbnail?: string;
 }
 export interface PrintShop {
   id: string;
   name: string;
   description: string;
+  code: string;
 }
 
 // Type alias for specific user response

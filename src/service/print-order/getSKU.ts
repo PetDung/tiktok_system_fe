@@ -1,24 +1,38 @@
 export interface CategoryPrintPrinteesHub {
-    category : string;
-    name : string;
-    variations: Variation []
+  category: string;
+  name: string;
+  variations: Variation[]
 }
 
 export interface Variation {
-    size : string;
-    sku: string;
-    color: string;
+  size: string;
+  sku: string;
+  color: string;
 }
 
 export interface ProductMenPrint {
-    name: string;
-    product_code : string;
-    category : string;
-    sub_category : string;
+  name: string;
+  product_code: string;
+  category: string;
+  sub_category: string;
 }
 
-export interface ProductMenPrintData {
-    data : ProductMenPrint[]
+export interface MenPrintData<T> {
+  data: T[]
+  pagination: {
+    limit: number,
+    page: number,
+    count: number
+  }
+}
+
+export interface MenPrintSku {
+  sku: string;
+  status: "Active" | "Inactive"; // nếu API chỉ trả về 2 trạng thái này
+  category: string;
+  sub_category: string;
+  size: string;
+  color: string;
 }
 
 
@@ -28,21 +42,88 @@ export const getVariationsPrinteesHub = async (): Promise<CategoryPrintPrinteesH
     const res = await fetch("/api/variations/printeeshub"); // gọi endpoint nội bộ
     if (!res.ok) throw new Error("Failed to fetch variations");
     const data = await res.json();
-    return data; 
+    return data;
   } catch (err: any) {
     console.error("Error fetching variations:", err.message);
     return [];
   }
 };
 
-export const getVariationsMenPrint = async (): Promise<ProductMenPrintData | null> => {
+
+export const getVariationsMenPrint = async (): Promise<MenPrintData<ProductMenPrint>> => {
   try {
-    const res = await fetch("/api/menprint"); // gọi endpoint nội bộ
-    if (!res.ok) throw new Error("Failed to fetch variations");
-    const data = await res.json();
-    return data; 
+    let page = 1;
+    let allData: ProductMenPrint[] = [];
+    let pagination: MenPrintData<ProductMenPrint>["pagination"] = {
+      limit: 0,
+      page: 1,
+      count: 0
+    };
+
+    while (true) {
+      const res = await fetch(`/api/variations/menprint?page=${page}`);
+      if (!res.ok) throw new Error("Failed to fetch variations");
+
+      const data: MenPrintData<ProductMenPrint> = await res.json();
+
+      allData = [...allData, ...data.data];
+      pagination = data.pagination;
+
+      // nếu đã lấy đủ (vd: count <= page * limit) thì dừng
+      if (data.data.length < data.pagination.limit) {
+        break;
+      }
+
+      page++;
+    }
+    const uniqueMap = new Map<string, ProductMenPrint>();
+    for (const item of allData) {
+      if (!uniqueMap.has(item.product_code)) {
+        uniqueMap.set(item.product_code, item);
+      }
+    }
+    const uniqueData = Array.from(uniqueMap.values());
+    return { data: uniqueData, pagination };
   } catch (err: any) {
     console.error("Error fetching variations:", err.message);
-    return null;
+    return {
+      data: [],
+      pagination: { limit: 0, page: 1, count: 0 }
+    };
+  }
+};
+export const getSkuMenPrint = async (prouduct_code: string): Promise<MenPrintData<MenPrintSku>> => {
+  try {
+    let page = 1;
+    let allData: MenPrintSku[] = [];
+    let pagination: MenPrintData<MenPrintSku>["pagination"] = {
+      limit: 0,
+      page: 1,
+      count: 0,
+    };
+
+    while (true) {
+      const res = await fetch(`/api/variations/menprint/sku?page=${page}&product_code=${prouduct_code}`);
+      if (!res.ok) throw new Error("Failed to fetch sku variations");
+
+      const data: MenPrintData<MenPrintSku> = await res.json();
+
+      allData = [...allData, ...data.data];
+      pagination = data.pagination;
+
+      // nếu đã hết trang thì dừng
+      if (data.data.length < data.pagination.limit) {
+        break;
+      }
+
+      page++;
+    }
+    return { data: allData, pagination };
+  } catch (err: any) {
+    console.error("Error fetching sku variations:", err.message);
+    return {
+      data: [],
+      pagination: { limit: 0, page: 1, count: 0 },
+    };
   }
 };

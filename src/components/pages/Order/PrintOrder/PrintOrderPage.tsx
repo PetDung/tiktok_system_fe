@@ -4,8 +4,12 @@ import { useEffect, useState } from "react";
 import ReviewPrint from "./_components/ReviewPrint";
 import AwaitDesign from "./_components/AwaitDesign";
 import Printing from "./_components/Printing";
-import { Order } from "@/service/types/ApiResponse";
+import { Order, PrintShop } from "@/service/types/ApiResponse";
 import { getOrderCantPrint } from "@/service/print-order/print-order-service";
+import { useWebSocket } from "@/Context/WebSocketContext";
+import { IMessage } from "@stomp/stompjs";
+import { CategoryPrintPrinteesHub, getVariationsMenPrint, getVariationsPrinteesHub, ProductMenPrint } from "@/service/print-order/getSKU";
+import { getAllPrinter } from "@/service/print/print-service";
 
 const tabs = [
   { id: "Review", label: "Cần xét duyệt", icon: <Eye />},
@@ -16,20 +20,69 @@ const tabs = [
 export default function PrintOrderPage() {
   const [activeTab, setActiveTab] = useState("Review");
   const [orderReviewList, setOrderRevieList] = useState<Order[]>([])
-  useEffect(() =>{
+  const [orderAwaitList, setOrderAwaitList] = useState<Order[]>([])
+  const [variationsPrinteesHub, setVariationsPrinteesHub] = useState<CategoryPrintPrinteesHub[]>([])
+  const [productMenPrint, setProductMenPrint] = useState<ProductMenPrint[]>([])
+  const [printers, setPrinter] = useState<PrintShop[]>([]);
 
+  const wsClient = useWebSocket(); 
+  useEffect(() =>{
     const load = async () =>{
         try{
-            const response = await getOrderCantPrint({}); 
-            setOrderRevieList(response.result.orders);
+              const [responseReview, responseAwait] = await Promise.all([
+                  getOrderCantPrint({ printStatus: "REVIEW" }),
+                  getOrderCantPrint({ printStatus: "AWAITING" }),
+              ]);
+              setOrderRevieList(responseReview.result.orders);
+              setOrderAwaitList(responseAwait.result.orders);
         }catch(e: any) {
             alert(e?.message || "Fail load")
         }
     }   
     load();
+    loadSetup()
   },[])
+  const loadSetup = async () => {
+    try {
+      const [dataPrinteesHub, dataMenPrint, response] = await Promise.all([
+        getVariationsPrinteesHub(),
+        getVariationsMenPrint(),
+        getAllPrinter()
+      ]);
+      const printer: PrintShop[] = response?.result || [];
+      setVariationsPrinteesHub(dataPrinteesHub);
+      setProductMenPrint(dataMenPrint.data);
+      setPrinter(printer);
 
+      console.log(dataMenPrint);
+      console.log(dataPrinteesHub);
+    } catch (e: any) {
+      alert(e?.message || "Fail load");
+    }
+  };
 
+  // WebSocket effect
+  useEffect(() => {
+    const callback = (msg: IMessage) => {
+      const updatedOrder: Order = JSON.parse(msg.body);
+      console.log(updatedOrder)
+      setOrderRevieList((prev) => {
+        const exists = prev.some((o) => o.id === updatedOrder.id);
+        if (exists) {
+          return prev.map((o) =>
+            o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o
+          );
+        } else {
+          return [updatedOrder, ...prev];
+        }
+      });
+    };
+
+    wsClient.subscribe("/user/queue/orders", callback);
+    return () => {
+      wsClient.unsubscribe("/user/queue/orders");
+    };
+  }, [wsClient]);
   return (
     <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col">
       <div className="mb-2">
@@ -60,8 +113,24 @@ export default function PrintOrderPage() {
 
       {/* Tab Content */}
       <div className="transition-all duration-200 ease-in-out flex-1 overflow-auto">
-        {activeTab === "Review" && <ReviewPrint orderList={orderReviewList}/>}
-        {activeTab === "AwaitDesign" && <AwaitDesign/>}
+        {activeTab === "Review" && 
+          <ReviewPrint
+            variationsPrinteesHub={variationsPrinteesHub}
+            productMenPrint={productMenPrint}
+            printers={printers}
+            setOrders={setOrderRevieList}  
+            orderList={orderReviewList}
+          />
+        }
+        {activeTab === "AwaitDesign" && 
+          <AwaitDesign 
+            variationsPrinteesHub={variationsPrinteesHub}
+            productMenPrint={productMenPrint}
+            printers={printers}
+            setOrders={setOrderAwaitList}  
+            orderList={orderAwaitList}
+          />
+          }
         {activeTab === "Printing" && <Printing/>}
       </div>
     </div>
