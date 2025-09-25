@@ -2,6 +2,11 @@ import { PrintShop } from "@/service/types/ApiResponse";
 import { Building2, Plus } from "lucide-react";
 import { useState } from "react";
 
+export type CreatePrintShopDto = {
+  name: string;
+  description: string;
+};
+
 export default function PrintShopFormModal({ 
   isOpen, 
   initialData, 
@@ -10,7 +15,7 @@ export default function PrintShopFormModal({
 }: {
   isOpen: boolean;
   initialData?: PrintShop;
-  onSubmit: (data: Omit<PrintShop, "id">) => void;
+  onSubmit: (data: CreatePrintShopDto) => void; 
   onClose: () => void;
 }) {
   const [name, setName] = useState(initialData?.name || "");
