@@ -1,10 +1,13 @@
 "use client";
 
 import React, { Fragment, useRef, useCallback, useEffect, useState } from "react";
-import { formatDate, getCategoryPathText, Product } from "@/service/types/ApiResponse";
-import { Copy } from "lucide-react";
+import { formatDate, getCategoryPathText, Product, ShopResponse } from "@/service/types/ApiResponse";
+import { Copy, RotateCcw } from "lucide-react";
 import { debounce } from "lodash";
 import LoadingIndicator from "@/components/UI/LoadingIndicator";
+import ModalShopAdd from "./ModalShopAdd";
+import { useAuth } from "@/Context/AuthContext";
+import RoleGuard from "@/components/UI/RoleGuard";
 
 type Props = {
   products: Product[];
@@ -21,6 +24,9 @@ export default function ProductActiveTable({
 }: Props) {
   const copiedIdRef = useRef<string | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  const [productSelect, setProductSelect] = useState<Product | null>(null)
+  const [openModal, setOpen] = useState<boolean>(false)
 
   /** Scroll handler debounced */
   const handleScroll = useCallback(
@@ -121,7 +127,8 @@ export default function ProductActiveTable({
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                   <div className="flex flex-col gap-2">
+                     <div className="flex items-center gap-2">
                       <a
                         href={productUrl}
                         target="_blank"
@@ -141,6 +148,17 @@ export default function ProductActiveTable({
                         <span className="text-xs text-green-600">Copied!</span>
                       )}
                     </div>
+                      <RoleGuard role={"Admin"}>
+                        <div
+                          onClick={() => {
+                            setProductSelect(product)
+                            setOpen(true)
+                          }}
+                        >
+                          <RotateCcw size={20} className=" hover:text-amber-300 " />
+                        </div>
+                      </RoleGuard>
+                   </div>
                   </td>
                 </tr>
               </Fragment>
@@ -150,6 +168,15 @@ export default function ProductActiveTable({
       </table>
       {loading && (
         <LoadingIndicator/>
+      )}
+
+      {openModal && productSelect && (
+        <RoleGuard role={"Admin"}>
+            <ModalShopAdd 
+              onClose={() => setOpen(false)}
+              product={productSelect}
+            />
+        </RoleGuard>
       )}
     </div>
   );

@@ -12,10 +12,8 @@ type HeaderProps = {
 
 export default function Header({ collapsed, setCollapsed, isMobile, sidebarOpen }: HeaderProps) {
   const { user, logout } = useAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogout = () => {
-    setShowUserMenu(false);
     logout();
   };
 
@@ -48,7 +46,6 @@ export default function Header({ collapsed, setCollapsed, isMobile, sidebarOpen 
           </div>
         )}
       </button>
-
       {/* Brand/Title */}
       <div className="flex items-center flex-1 min-w-0">
         <div className="flex items-center space-x-3">
@@ -71,60 +68,22 @@ export default function Header({ collapsed, setCollapsed, isMobile, sidebarOpen 
       {/* User Menu */}
       {user && (
         <div className="relative ml-4">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
+          <div
             className="flex items-center space-x-2 p-2 rounded-lg hover:bg-black/15 hover:bg-opacity-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
           >
             {/* Avatar */}
             <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-sm font-bold">
               {user.name?.charAt(0).toUpperCase() || "G"}
-            </div>
-            {/* Dropdown arrow */}
-            <svg 
-              className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {/* Dropdown Menu */}
-          {showUserMenu && (
-            <>
-              <div 
-                className="fixed inset-0 z-50" 
-                onClick={() => setShowUserMenu(false)}
-              />
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-20 animate-in slide-in-from-top-2 duration-200">
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.team}</p>
-                </div>
-                
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150 flex items-center space-x-2">
-                  <UserPen />
-                  <span>Thông tin cá nhân</span>
-                </button>
-                
-                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150 flex items-center space-x-2">
-                  <Settings />
-                  <span>Cài đặt</span>
-                </button>
-                
-                <hr className="my-1" />
-                
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors duration-150 flex items-center space-x-2"
+            </div>   
+            <button
+                  onClick={()=>handleLogout()}
+                  className=" w-full px-4 py-2 text-left text-sm text-white hover:bg-red-700 transition-colors duration-150 flex items-center space-x-2"
                 >
                   <LogOut />
                   <span>Đăng xuất</span>
-                </button>
-              </div>
-            </>
-          )}
+              </button>
+          </div>
+          
         </div>
       )}
     </header>

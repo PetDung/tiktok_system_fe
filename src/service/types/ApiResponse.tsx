@@ -196,6 +196,7 @@ export interface ShopResponse {
     createdAt: Date;
     tiktokShopName? : string;
     userShopName : string;
+    ownerName: string;
 }
 export interface Label {
   doc_url : string;

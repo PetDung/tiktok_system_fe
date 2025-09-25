@@ -19,6 +19,12 @@ export type GetProductSaleParam = {
     endTime? : number | null ;
 }
 
+export type UploadProductParam = {
+   productId: string;
+   shopId: string;
+   shopUploadId: string[];
+}
+
 
 export async function getProdcDetails ({shopId, productId} :  {shopId : string, productId: string}){
      try {
@@ -147,4 +153,28 @@ export async function getProductSales(param: GetProductSaleParam) {
         }
         throw new AuthError(500, "An unexpected error occurred. Please try again.");
     }
+} 
+
+export async function uploadProduct(param: UploadProductParam) {
+  try {
+    const url = `/product/upload/reup/${param.productId}/${param.shopId}`;
+    const response = await axiosClient.post<any>(url, {},{
+      params: {
+        myShopIds: param.shopUploadId.join(","),
+      },
+    });
+    if (response.data.code === 1000) {
+      return response.data; // Assuming the shop data is in the 'data' field
+    }
+    throw new AuthError(500, "Invalid response from server");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const serverError = error.response?.data as ApiResponse<any>;
+      throw new AuthError(
+        serverError.code || 500,
+        serverError.message || "Login failed. Please try again."
+      );
+    }
+    throw new AuthError(500, "An unexpected error occurred. Please try again.");
+  }
 } 
