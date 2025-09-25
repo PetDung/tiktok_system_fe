@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Building2, Search } from "lucide-react";
-import PrintShopFormModal from "../_components/PrintShopForm";
+import PrintShopFormModal, { CreatePrintShopDto } from "../_components/PrintShopForm";
 import ConfirmationModal from "../_components/ConfirmationModal";
 import PrintShopList from "../_components/PrintShopList";
 import { craterPrinter, deletePrinter, getAllPrinter, updatePrinter } from "@/service/print/print-service";
@@ -42,7 +42,7 @@ export default function PrintShopsPage() {
   );
 
   // Thêm mới nhà in
-  const handleAdd = async (data: Omit<PrintShop, "id">) => {
+  const handleAdd = async (data: CreatePrintShopDto) => {
     const newPrinter: PrintRequesst ={
         name: data.name,
         description: data.description
@@ -61,7 +61,7 @@ export default function PrintShopsPage() {
   };
 
   // Cập nhật nhà in
-  const handleUpdate = async (data: Omit<PrintShop, "id">) => {
+  const handleUpdate = async (data: CreatePrintShopDto) => {
     if (!editingShop) return;
      try{
         const newPrinter: PrintRequesst ={
