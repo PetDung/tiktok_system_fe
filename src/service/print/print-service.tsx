@@ -1,7 +1,7 @@
 import axiosClient from "@/lib/axiosClient";
 import { ApiResponse, AuthError, PrintShop } from "../types/ApiResponse";
 import axios from "axios";
-import { PrintRequesst } from "@/components/pages/Design/Printer/PrinterPage";
+import { CreatePrintShopDto } from "@/components/pages/Design/_components/PrintShopForm";
 
 
 export const getAllPrinter = async () => {
@@ -24,7 +24,7 @@ export const getAllPrinter = async () => {
 };
 
 
-export const craterPrinter = async (p : PrintRequesst) => {
+export const craterPrinter = async (p : CreatePrintShopDto) => {
   try {
     const response = await axiosClient.post<ApiResponse<PrintShop>>("/printer", p);
     if (response.data.code === 1000) {
@@ -63,7 +63,7 @@ export const deletePrinter = async (id :string) => {
   }
 };
 
-export const updatePrinter = async (id :string, p : PrintRequesst) => {
+export const updatePrinter = async (id :string, p : CreatePrintShopDto) => {
   try {
     const response = await axiosClient.put<ApiResponse<PrintShop>>(`/printer/${id}`, p);
     if (response.data.code === 1000) {

@@ -11,7 +11,6 @@ import ActionDropdown from "@/components/UI/ActionDropdown"
 
 type Props = {
     orderList: Order[]
-    setOrders: Dispatch<SetStateAction<Order[]>>;
     variationsPrinteesHub : CategoryPrintPrinteesHub[];
     productMenPrint: ProductMenPrint[];
     printers: PrintShop []
@@ -28,7 +27,7 @@ export type AttributeFull = {
     orderOrigin: any[]
     code : string;
 }
-export default function TablOrderPrint({ orderList, setOrders, variationsPrinteesHub, productMenPrint, printers  }: Props) {
+export default function TablOrderPrint({ orderList, variationsPrinteesHub, productMenPrint, printers  }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [orderSelect, setOrderSelect] = useState<Order | null>(null);
     const [attribute, setAttribute ] = useState<AttributeFull | null>(null);
@@ -83,13 +82,7 @@ export default function TablOrderPrint({ orderList, setOrders, variationsPrintee
     const updatePrinter = async (orderId: string, printerId: string | null) => {
         try {
             const finalPrinterId = !printerId ? "REMOVE" : printerId;
-            const response = await updatePrinterOrder(orderId, finalPrinterId);
-
-            setOrders(prev =>
-                prev.map(order =>
-                    order.id === orderId ? { ...response.result } : order
-                )
-            );
+            updatePrinterOrder(orderId, finalPrinterId);
         } catch (e: any) {
             console.error('Update printer error:', e);
             alert(e.message || "Lỗi khi cập nhật máy in");

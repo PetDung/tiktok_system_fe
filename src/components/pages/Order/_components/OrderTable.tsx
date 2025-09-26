@@ -66,7 +66,6 @@ export default function OrderTable(
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
-
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const target = entries[0];
@@ -213,7 +212,6 @@ export default function OrderTable(
       </div>
     </div>
   );
-
   return (
     <>
       <div 

@@ -1,27 +1,43 @@
 "use client"
 
-import { Order, PrintShop } from "@/service/types/ApiResponse";
+import { Order, OrderListResponse, PrintShop } from "@/service/types/ApiResponse";
 import TablOrderPrint from "./TablOrderPrint";
-import { Dispatch, SetStateAction } from "react";
+import { useEffect, useState } from "react";
 import { CategoryPrintPrinteesHub, ProductMenPrint } from "@/service/print-order/getSKU";
+import { getOrderCantPrint } from "@/service/print-order/print-order-service";
 
 type Props = {
-    orderList: Order[]
-    setOrders: Dispatch<SetStateAction<Order[]>>;
     variationsPrinteesHub: CategoryPrintPrinteesHub[];
     productMenPrint: ProductMenPrint[];
     printers: PrintShop[]
 }
 
-export default function AwaitDesign({ orderList, setOrders, variationsPrinteesHub, productMenPrint, printers }: Props) {
+export default function AwaitDesign({variationsPrinteesHub, productMenPrint, printers }: Props) {
+
+    const [orderAwaitList, setOrderAwaitList] = useState<Order[]>([])
+
+    useEffect(() => {
+        load();
+    }, [])
+
+    const load = async () => {
+        try {
+            const [responseAwait] = await Promise.all([
+                getOrderCantPrint({ printStatus: "AWAITING" }),
+            ]);
+            setOrderAwaitList(responseAwait.result.orders);
+        } catch (e: any) {
+            alert(e?.message || "Fail load")
+        }
+    }     
+
     return (
         <div>
             <TablOrderPrint
                 variationsPrinteesHub={variationsPrinteesHub}
                 productMenPrint={productMenPrint}
                 printers={printers}
-                setOrders={setOrders}
-                orderList={orderList}
+                orderList={orderAwaitList}
             />
         </div>
     );

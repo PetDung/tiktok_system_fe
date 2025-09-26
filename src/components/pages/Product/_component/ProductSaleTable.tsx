@@ -1,13 +1,16 @@
 "use client";
 
 import React, { Fragment, useRef, useCallback, useState, useEffect } from "react";
-import { ProductReport } from "@/service/types/ApiResponse";
-import { Copy } from "lucide-react";
+import { Product, ProductReport } from "@/service/types/ApiResponse";
+import { Copy, RotateCcw } from "lucide-react";
 import LoadingIndicator from "@/components/UI/LoadingIndicator";
+import RoleGuard from "@/components/UI/RoleGuard";
+import ModalShopAdd from "./ModalShopAdd";
+import ThumbPreview from "../../Design/_components/ThumbPreview";
 
 type Props = {
   products: ProductReport[];
-  onSelectionChange?: (selected: ProductReport[]) => void; 
+  onSelectionChange?: (selected: ProductReport[]) => void;
   loading: boolean;
 };
 
@@ -15,6 +18,9 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
   const copiedIdRef = useRef<string | null>(null);
 
   const [selectedProducts, setSelectedProducts] = useState<ProductReport[]>([]);
+
+  const [productSelect, setProductSelect] = useState<Product | null>(null)
+  const [openModal, setOpen] = useState<boolean>(false)
 
   const handleCopy = async (productUrl: string, id: string) => {
     try {
@@ -68,6 +74,7 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
             <th className="px-2 py-2 text-left font-bold text-gray-700">STT</th>
             <th className="px-2 py-2 text-left font-bold text-gray-700">ID</th>
             <th className="px-2 py-2 text-left font-bold text-gray-700">Shop</th>
+            <th className="px-2 py-2 text-left font-bold text-gray-700">Images</th>
             <th className="px-2 py-2 text-left font-bold text-gray-700">Product</th>
             <th className="px-2 py-2 text-left font-bold text-gray-700">Sold</th>
             <th className="px-2 py-2 text-left font-bold text-gray-700">Link</th>
@@ -79,9 +86,8 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
             return (
               <Fragment key={product.productId}>
                 <tr
-                  className={`hover:bg-gray-50 transition-colors ${
-                    isSelected(product) ? "bg-blue-50" : ""
-                  }`}
+                  className={`hover:bg-gray-50 transition-colors ${isSelected(product) ? "bg-blue-50" : ""
+                    }`}
                 >
                   <td className="px-2 py-2">
                     <input
@@ -93,7 +99,15 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
                   <td className="px-2 py-2 text-gray-600">{index + 1}</td>
                   <td className="px-2 py-2 text-gray-600">{product.productId}</td>
                   <td className="px-2 py-2 font-medium text-gray-800">
-                    {product.shopName || "-"}
+                    {product.shop.shopName || "-"}
+                  </td>
+                  <td className="px-2 py-2">
+                    <ThumbPreview
+                      thumbUrl={product.skuImage}
+                      fullImageUrl={product.skuImage}
+                      size={60}
+                    />
+
                   </td>
                   <td className="px-2 py-2 text-gray-600 max-w-xs">
                     <p className="line-clamp-2">{product.productName}</p>
@@ -121,6 +135,37 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
                       {copiedIdRef.current === product.productId && (
                         <span className="text-xs text-green-600">Copied!</span>
                       )}
+                      <RoleGuard role={"Admin"}>
+                        <div
+                          onClick={() => {
+
+                            const productItem: Product = {
+                              id: product.productId,
+                              activeTime: 1000,
+                              categoryChains: null,
+                              mainImages: [],
+                              shop: {
+                                id: product.shop.shopId,
+                                name: product.shop.shopName,
+                                createdAt: new Date(),
+                                tiktokShopName: product.shop.shopName,
+                                userShopName: product.shop.shopName,
+                                ownerName: product.shop.shopName,
+                                productUpload: []
+                              },
+                              createTime: 100,
+                              status: "Active",
+                              title: product.productName,
+                              updateTime: 1000
+                            }
+
+                            setProductSelect(productItem)
+                            setOpen(true)
+                          }}
+                        >
+                          <RotateCcw size={20} className=" hover:text-amber-300 " />
+                        </div>
+                      </RoleGuard>
                     </div>
                   </td>
                 </tr>
@@ -129,9 +174,19 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
           })}
         </tbody>
       </table>
-        {loading && (
-        <LoadingIndicator/>
+      {loading && (
+        <LoadingIndicator />
       )}
+
+      {openModal && productSelect && (
+        <RoleGuard role={"Admin"}>
+          <ModalShopAdd
+            onClose={() => setOpen(false)}
+            product={productSelect}
+          />
+        </RoleGuard>
+      )}
+
     </div>
   );
 }

@@ -164,28 +164,11 @@ export interface LineItem {
   design: Design | null;
 }
 
-export interface OrderResponse {
-    total_count: number;
-    next_page_token?: string;
-    orders: Order[];
-    last? : boolean;
-    current_page?: number;
-}
-
-
-export interface RefundResponse {
-    total_count: number;
-    next_page_token?: string;
-    orders: Return[];
-    last? : boolean;
-    current_page?: number;
-}
-
 
 export interface ResponsePage<T> {
     total_count: number;
     next_page_token?: string;
-    orders: T[];
+    data: T[];
     last? : boolean;
     current_page?: number;
 }
@@ -197,6 +180,7 @@ export interface ShopResponse {
     tiktokShopName? : string;
     userShopName : string;
     ownerName: string;
+    productUpload : string []
 }
 export interface Label {
   doc_url : string;
@@ -249,7 +233,11 @@ export interface ProductReport{
   productId : string;
   productName: string;
   soldCount: number;
-  shopName: string;
+  skuImage: string;
+  shop: {
+    shopId : string;
+    shopName : string;
+  }
 } 
 export interface ProductReportResponse{
   products : ProductReport[];
@@ -271,11 +259,12 @@ export interface PrintShop {
   name: string;
   description: string;
   code: string;
+  createdAt : Date;
 }
 
 // Type alias for specific user response
 export type UserLoginResponse = ApiResponse<UserData>;
-export type OrderListResponse = ApiResponse<OrderResponse>;
+export type OrderListResponse = ApiResponse<ResponsePage<Order>>;
 export type ShopResponseData = ApiResponse<ShopResponse[]>;
 export type ProductApiResponse = ApiResponse<ProductResponse>;
 export type ProductReportApiResponse = ApiResponse<ProductReportResponse>;

@@ -2,10 +2,12 @@
 
 import React, { Fragment, useRef, useState, useCallback, useEffect } from "react";
 import { AuditFailedReason, formatDate, getCategoryPathText, Product } from "@/service/types/ApiResponse";
-import { Copy, Info } from "lucide-react";
+import { Copy, Info, RotateCcw } from "lucide-react";
 import { debounce } from "lodash";
 import ThumbPreview from "../../Design/_components/ThumbPreview";
 import LoadingIndicator from "@/components/UI/LoadingIndicator";
+import RoleGuard from "@/components/UI/RoleGuard";
+import ModalShopAdd from "./ModalShopAdd";
 
 type Props = {
   products: Product[];
@@ -24,6 +26,9 @@ export default function ProductRecordTable({
 }: Props) {
   const copiedIdRef = useRef<string | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  const [productSelect, setProductSelect] = useState<Product | null>(null)
+  const [openModal, setOpen] = useState<boolean>(false)
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -180,6 +185,16 @@ export default function ProductRecordTable({
                       <Copy size={16} />
                     </button>
                     {copiedIdRef.current === product.id && <span className="text-xs text-green-600">Copied!</span>}
+                      <RoleGuard role={"Admin"}>
+                        <div
+                          onClick={() => {
+                            setProductSelect(product)
+                            setOpen(true)
+                          }}
+                        >
+                          <RotateCcw size={20} className=" hover:text-amber-300 " />
+                        </div>
+                      </RoleGuard>
                   </div>
                 </td>
               </tr>
@@ -192,6 +207,15 @@ export default function ProductRecordTable({
           <LoadingIndicator/>
         )}
       </div>
+
+      {openModal && productSelect && (
+        <RoleGuard role={"Admin"}>
+          <ModalShopAdd
+            onClose={() => setOpen(false)}
+            product={productSelect}
+          />
+        </RoleGuard>
+      )}
 
       {/* Modal */}
       {modalOpen && (

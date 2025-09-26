@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axiosClient";
-import { ApiResponse, AuthError, RefundResponse } from "../types/ApiResponse";
+import { ApiResponse, AuthError, ResponsePage, Return } from "../types/ApiResponse";
 import axios from "axios";
 
 
@@ -12,9 +12,9 @@ export interface FetchReturnParams {
 
 export const getRefundAllShop = async (
   param: FetchReturnParams
-): Promise<ApiResponse<RefundResponse>> => {
+): Promise<ApiResponse<ResponsePage<Return>>> => {
   try {
-    const response = await axiosClient.get<ApiResponse<RefundResponse>>(
+    const response = await axiosClient.get<ApiResponse<ResponsePage<Return>>>(
       `/returns`,
       {
         params: {
