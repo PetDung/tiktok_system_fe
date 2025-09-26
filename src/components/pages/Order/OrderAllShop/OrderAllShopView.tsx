@@ -1,6 +1,6 @@
 "use client";
 import { exportOrderSelected, updatePrinterOrder } from "@/service/order/order-service";
-import { Order, PrintShop } from "@/service/types/ApiResponse";
+import { Order, PrintShop, ShopResponse } from "@/service/types/ApiResponse";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import OrderTable from "../_components/OrderTable";
 import MultiSelect, { Option } from "../_components/MultiSelect";
@@ -11,7 +11,9 @@ import ImportDropdown from "../_components/ImportDropdown";
 import { useSearchParams } from "next/navigation";
 import { usePrinters } from "@/lib/customHook/usePrinters";
 import { useShops } from "@/lib/customHook/useShop";
-import { useOrderAllShop } from "@/lib/customHook/useOrderAllShop";
+import { updateOrderInAllOrdersCache, useOrderAllShop } from "@/lib/customHook/useOrderAllShop";
+import { IMessage } from "@stomp/stompjs";
+import { Message } from "@/service/types/websocketMessageType";
 
 const statusOptions = [
     { value: "UNPAID", label: "Unpaid" },
@@ -43,47 +45,70 @@ export default function OrderAllShopView() {
     const [page, setPage] = useState<number>(0);
     const [orders, setOrders] = useState<Order[]>([]);
     const [hasMore, setHasMore] = useState<boolean>(false);
+    const [search, setSearch] = useState<string>("");
+    const wsClient = useWebSocket();
 
-    const {data: orderResponse, isLoading,refresh} = useOrderAllShop(
+    const { data: orderResponse, isLoading} = useOrderAllShop(
         {
             status,
             shipping: shipBy,
-            orderId,
+            orderId: search,
             shopIds: selectedShops,
-            page : page
+            page: page
         }
     );
+    useEffect(() => {
+        if (!orderResponse) return;
 
-    useEffect(() =>{
-        if(!orderResponse || orderResponse.result.data.length < 0) return;  
-        setOrders(orderResponse?.result?.data ?? []);
-        setHasMore(!orderResponse?.result?.last || false);
+        const newOrders = orderResponse.result.data || [];
+        setOrders(prev => {
+            if (page === 0) return newOrders; // replace khi filter/search
+            const existingIds = new Set(prev.map(o => o.id));
+            const uniqueNewOrders = newOrders.filter(o => !existingIds.has(o.id));
+            return [...prev, ...uniqueNewOrders];
+        });
 
-    },[orderResponse])
+        setHasMore(!orderResponse.result.last);
+    }, [orderResponse, page]);
+
+    useEffect(() => {
+        const callback = (msg: IMessage) => {
+            const updated: Message<Order> = JSON.parse(msg.body);
+            if(updated.event === "UPDATE") {
+                const newOrder = updated.data;
+                updateAOrder(newOrder)
+            }
+        };
+        wsClient.subscribe("/user/queue/orders", callback);
+
+        // cleanup: unsubscribe khi component unmount
+        return () => {
+            wsClient.unsubscribe("/user/queue/orders");
+        };
+    }, [wsClient]);
+
     const { data: printersResponse } = usePrinters();
     const printers: PrintShop[] = (printersResponse?.result ?? []).sort(
-        (a, b) =>
+        (a: PrintShop, b: PrintShop) =>
             new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     );
-
+    
     const { data: shopsResponse, isLoading: shopLoading } = useShops();
     const shops = (shopsResponse?.result ?? []).sort(
-        (a, b) =>
+        (a: ShopResponse, b: ShopResponse) =>
             new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     );
 
-    const optionShops: Option[] = shops.map((item) => ({
+    const optionShops: Option[] = shops.map((item: ShopResponse) => ({
         value: item.id,
         label: item.userShopName,
     }));
-
-    const wsClient = useWebSocket();
     const searchInputRef = useRef<HTMLInputElement | null>(null);
 
     const handlerSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (!orderId || is18Digit(orderId)) {
-            // trigger re-fetch (SWR sẽ chạy lại vì param đổi)
+            handleBeforeFillter(orderId, setSearch)
             return;
         }
         if (searchInputRef.current) {
@@ -100,6 +125,8 @@ export default function OrderAllShopView() {
 
     const debouncedHandleSelected = useCallback(
         debounce((selected: Option[]) => {
+            setOrders([])
+            setPage(0)
             setSelectedShops(selected.map((s) => s.value));
         }, 600),
         []
@@ -135,9 +162,32 @@ export default function OrderAllShopView() {
         setShipBy("");
         setSelectedShops([]);
         setOrderId("");
+        setSearch("")
         setSelectedOrders(new Set());
     };
+    const handleBeforeFillter = (value : any, callBack : (value : any) =>void )=>{
+        setOrders([])
+        setPage(0)
+        callBack(value)
+    }
 
+
+    const updatePrinter = async (orderId: string, printerId: string | null) => {
+        try {
+            const finalPrinterId = !printerId ? "REMOVE" : printerId;
+            const response = await updatePrinterOrder(orderId, finalPrinterId);
+            const newOrder : Order = response.result;
+            updateAOrder(newOrder)
+        } catch (e: any) {
+            console.error('Update printer error:', e);
+            alert(e.message || "Lỗi khi cập nhật nhà in");
+        }
+    }
+
+    const updateAOrder = ( newOrder : Order) =>{
+        setOrders(prevOrders => prevOrders.map(o => o.id === newOrder.id ? newOrder : o));
+        updateOrderInAllOrdersCache(newOrder.id, newOrder)
+    }
     return (
         <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col ">
             {/* Action buttons */}
@@ -147,8 +197,8 @@ export default function OrderAllShopView() {
                     onClick={exportOrder}
                     disabled={selectedOrders.size === 0 || exportLoading}
                     className={`px-2 py-2 text-xs font-medium rounded-lg transition-all duration-200 flex items-center space-x-2 ${selectedOrders.size === 0 || exportLoading
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
                         }`}
                 >
                     {exportLoading ? "Exporting..." : `Export (${selectedOrders.size})`}
@@ -169,7 +219,7 @@ export default function OrderAllShopView() {
             <div className="bg-gray-50 p-2 rounded-lg mb-2 border border-gray-200 flex flex-wrap items-end gap-4">
                 <select
                     value={shipBy}
-                    onChange={(e) => setShipBy(e.target.value)}
+                    onChange={(e) => handleBeforeFillter(e.target.value, setShipBy)}
                     className="border rounded-lg px-3 py-2 text-sm"
                 >
                     <option value="">All Shipping Types</option>
@@ -182,7 +232,7 @@ export default function OrderAllShopView() {
 
                 <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    onChange={(e) => handleBeforeFillter(e.target.value, setStatus)}
                     className="border rounded-lg px-3 py-2 text-sm"
                 >
                     <option value="">All Statuses</option>
@@ -224,16 +274,15 @@ export default function OrderAllShopView() {
                     orders={orders}
                     loading={isLoading}
                     hasMore={hasMore}
-                    onLoadMore={() => setPage(page +1)}
+                    onLoadMore={() => setPage(prev => prev + 1)}
                     isSelectable={true}
                     selectList={selectedOrders}
                     onSelectChange={setSelectedOrders}
-                    updatePOrder={() => { }}
+                    updatePOrder={updatePrinter}
                     type="ALL"
                     printer={printers}
                 />
             </div>
-
             <LoadingOverlay show={exportLoading} />
         </div>
     );

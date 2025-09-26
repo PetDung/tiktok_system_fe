@@ -36,14 +36,12 @@ export default function ViewOrderInShop() {
 
     useEffect(() => {
         if (!shopId) {
-            console.error("Shop ID is required to fetch orders.");
             return;
         }
         fetchOrders("");
     }, [shopId, status, shipBy]);
 
     const handlerSearch = async () => {
-
         if (orderId && is18Digit(orderId) || !orderId) {
             await fetchOrders("");
             return;
@@ -56,15 +54,16 @@ export default function ViewOrderInShop() {
         setLoading(true);
         try {
             const response = await getOrderInShop({ shopId, nextPageToken: pageToken, status: status, shipping: shipBy, orderId: orderId });
+            console.log(response)
             if (!pageToken) {
-                setOrders(response?.result?.orders || []);
+                setOrders(response?.result?.data || []);
             } else {
-                if (response?.result?.orders) {
+                if (response?.result?.data) {
                     setOrders(prev => {
                         // Tạo set các id hiện có
                         const existingIds = new Set(prev.map(o => o.id));
                         // Lọc những order mới chưa có trong set
-                        const uniqueNewOrders = response?.result?.orders.filter(o => !existingIds.has(o.id));
+                        const uniqueNewOrders = response?.result?.data.filter(o => !existingIds.has(o.id));
                         // Trả về mảng kết hợp
                         return [...prev, ...uniqueNewOrders];
                     });

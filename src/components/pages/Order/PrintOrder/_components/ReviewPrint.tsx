@@ -26,7 +26,7 @@ export default function ReviewPrint({ variationsPrinteesHub, productMenPrint, pr
         return <div className="text-red-500">Lỗi tải dữ liệu: {error.message}</div>;
     }
 
-    const orderReviewList = data?.result.orders ?? [];
+    const orderReviewList = data?.result.data ?? [];
 
     return (
         <div>

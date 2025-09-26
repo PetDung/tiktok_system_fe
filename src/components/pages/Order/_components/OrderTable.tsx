@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import OptionalSelect, { Option } from "@/components/UI/OptionalSelect";
 import EditableField from "@/components/UI/EditableField";
 import { updateCostOrder } from "@/service/order/order-service";
+import LoadingIndicator from "@/components/UI/LoadingIndicator";
 
 interface OrderTableProps {
   orders: Order[];
@@ -18,6 +19,7 @@ interface OrderTableProps {
   onSelectChange?: (selected: Set<string>) => void;
   updatePOrder?: (orderId: string, printerId: string | null) => void
   type?: string;
+  updateAOrder? : (newOrder : Order) => void
 }
 
 export default function OrderTable(
@@ -30,7 +32,8 @@ export default function OrderTable(
     onSelectChange = () => null,
     updatePOrder, 
     printer = [],
-    type = "ONE"
+    type = "ONE",
+    updateAOrder
   }: OrderTableProps) {
   
   const params = useParams();
@@ -40,7 +43,6 @@ export default function OrderTable(
   const [modalOpen, setModalOpen] = useState(false);
   const [shopSelect, setShopSelect] = useState<string>(shopId || "");
   const [printerOption, setPrinterOption] = useState<Option[]>([]);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const tableRef = useRef<HTMLDivElement>(null);
   const loadingTriggerRef = useRef<HTMLDivElement>(null);
@@ -69,8 +71,7 @@ export default function OrderTable(
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const target = entries[0];
-        if (target.isIntersecting && hasMore && !loading && !isLoadingMore) {
-          setIsLoadingMore(true);
+        if (target.isIntersecting && hasMore && !loading) {
           onLoadMore();
         }
       },
@@ -84,7 +85,7 @@ export default function OrderTable(
     if (loadingTriggerRef.current) {
       observerRef.current.observe(loadingTriggerRef.current);
     }
-  }, [hasMore, loading, isLoadingMore, onLoadMore]);
+  }, [hasMore, loading, onLoadMore]);
 
   // Setup observer khi component mount
   useEffect(() => {
@@ -95,27 +96,18 @@ export default function OrderTable(
       }
     };
   }, [setupIntersectionObserver]);
-
-  // Reset loading state khi orders update
-  useEffect(() => {
-    if (!loading) {
-      setIsLoadingMore(false);
-    }
-  }, [loading]);
-
   // Fallback scroll handler (backup method)
   const handleScroll = useCallback(() => {
-    if (!tableRef.current || isLoadingMore) return;
+    if (!tableRef.current || loading) return;
     
     const { scrollTop, scrollHeight, clientHeight } = tableRef.current;
     const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
     
     // Trigger when 90% scrolled and conditions are met
     if (scrollPercentage >= 0.9 && !loading && hasMore) {
-      setIsLoadingMore(true);
       onLoadMore();
     }
-  }, [loading, hasMore, isLoadingMore, onLoadMore]);
+  }, [loading, hasMore, onLoadMore]);
 
   const formatDate = (timestamp: number) =>
     new Date(timestamp * 1000).toLocaleString("vi-VN", {
@@ -186,22 +178,15 @@ export default function OrderTable(
     }
 
     try {
-      await updateCostOrder(orderId, value);
+      const response = await updateCostOrder(orderId, value);
+      const newOrder = response.result;
+      updateAOrder && updateAOrder(newOrder)
     } catch (e) {
       console.error(e);
     }
   };
 
   const isAllSelected = orders.length > 0 && selectList.size === orders.length;
-
-  // Loading indicator component
-  const LoadingIndicator = () => (
-    <div className="flex items-center justify-center py-6 space-x-2">
-      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-      <span className="text-gray-600 font-medium">Đang tải thêm đơn hàng...</span>
-    </div>
-  );
-
   // No more data indicator
   const NoMoreDataIndicator = () => (
     <div className="flex items-center justify-center py-4">
@@ -410,7 +395,7 @@ export default function OrderTable(
         {/* Loading trigger element for Intersection Observer */}
         {hasMore && (
           <div ref={loadingTriggerRef} className="h-20 flex items-center justify-center">
-            {(loading || isLoadingMore) ? <LoadingIndicator /> : null}
+            {(loading) ? <LoadingIndicator /> : null}
           </div>
         )}
 
