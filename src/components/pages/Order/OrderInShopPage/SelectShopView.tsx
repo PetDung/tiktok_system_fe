@@ -1,77 +1,38 @@
 "use client"
-import { getMyShop } from "@/service/shop/shop-service";
-import { ShopResponse } from "@/service/types/ApiResponse";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import ShopTable from "../_components/ShopTable";
 import { useRouter } from "next/navigation";
-
-interface SelectShopState {
-  shops: ShopResponse[];
-  loading: boolean;
-  error: string | null;
-}
+import LoadingIndicator from "@/components/UI/LoadingIndicator";
+import { useShops } from "@/lib/customHooks/useShops";
 
 export const SelectShopView = () => {
-  const [state, setState] = useState<SelectShopState>({
-    shops: [],
-    loading: true,
-    error: null
-  });
-  
+  const { data: shopsResponse, isLoading: shopLoading, refresh, error } = useShops();
+  const shops = (shopsResponse?.result ?? []).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
+
   const router = useRouter();
 
-  const fetchShops = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    
-    try {
-      const response = await getMyShop();
-      const normalizedShops = response.result
-        ? Array.isArray(response.result)
-          ? response.result
-          : [response.result]
-        : [];
-      
-      setState({
-        shops: normalizedShops,
-        loading: false,
-        error: null
-      });
-    } catch (error) {
-      console.error("Error fetching shops:", error);
-      setState({
-        shops: [],
-        loading: false,
-        error: error instanceof Error ? error.message : "Có lỗi xảy ra khi tải dữ liệu"
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchShops();
-  }, [fetchShops]);
 
   const handleShopClick = useCallback((shopId: string) => {
     router.push(`/order-in-shop/${shopId}`);
   }, [router]);
 
   const handleRetry = useCallback(() => {
-    fetchShops();
-  }, [fetchShops]);
+    refresh();
+  }, [refresh]);
 
   // Loading state
-  if (state.loading) {
+  if (shopLoading) {
     return (
       <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Đang tải danh sách shop...</p>
-        </div>
+        <LoadingIndicator/>
       </div>
     );
   }
 
   // Error state
-  if (state.error) {
+  if (error) {
     return (
       <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -81,7 +42,7 @@ export const SelectShopView = () => {
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Không thể tải dữ liệu</h3>
-          <p className="text-gray-600 mb-4">{state.error}</p>
+          <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={handleRetry}
             className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
@@ -95,10 +56,10 @@ export const SelectShopView = () => {
 
   return (
     <div>
-      <ShopTable 
-        data={state.shops} 
+      <ShopTable
+        data={shops}
         onShopClick={handleShopClick}
-        onRefresh={fetchShops}
+        onRefresh={refresh}
       />
     </div>
   );

@@ -1,33 +1,64 @@
 "use client"
 
-export default function Printing() {
+import { Order, PrintShop } from "@/service/types/ApiResponse";
+import TablOrderPrint from "./TablOrderPrint";
+import { CategoryPrintPrinteesHub, ProductMenPrint } from "@/service/print-order/getSKU";
+import LoadingIndicator from "@/components/UI/LoadingIndicator";
+import { PrintShippMethod } from "@/service/types/PrintOrder";
+
+type Props = {
+    variationsPrinteesHub: CategoryPrintPrinteesHub[];
+    productMenPrint: ProductMenPrint[];
+    orderReviewList : Order[];
+    setOrderReviewList: React.Dispatch<React.SetStateAction<Order[]>>;
+    isLoading : boolean;
+    printers: PrintShop[];
+    loadMore: () => void;
+    hasMore : boolean;
+    printShippingMethods: PrintShippMethod[]
+}
+
+export default function Printing(
+    { 
+        variationsPrinteesHub, 
+        productMenPrint, 
+        printers, 
+        orderReviewList, 
+        setOrderReviewList, 
+        isLoading, 
+        loadMore,
+        hasMore,
+        printShippingMethods
+    }: Props) {
     return (
-        <div className="p-6 bg-white rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">Xem trước đơn hàng</h3>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <div className="bg-gray-50 rounded-lg p-6 max-w-md mx-auto">
-                    <div className="text-sm text-gray-600 mb-2">Preview đơn hàng</div>
-                    <div className="border-b pb-2 mb-2">
-                        <h4 className="font-semibold">CÔNG TY ABC</h4>
-                        <p className="text-xs text-gray-600">Địa chỉ: 123 Đường XYZ, Quận 1, TP.HCM</p>
+        <div>
+            {isLoading && <div className="h-20 flex items-center justify-center">
+                <LoadingIndicator />
+            </div>}
+            {!isLoading && <TablOrderPrint
+                printShippingMethods = {printShippingMethods}
+                setOrder = {setOrderReviewList}
+                variationsPrinteesHub={variationsPrinteesHub}
+                productMenPrint={productMenPrint}
+                printers={printers}
+                orderList={orderReviewList}
+            />}
+             <div>
+                {hasMore && (
+                    <div className="flex justify-center items-center">
+                        <button
+                            onClick={loadMore}
+                            disabled={isLoading}
+                            className="px-3 sticky top-0 py-1 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 flex items-center"
+                        >
+                            {isLoading ? (
+                                <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4 mr-2"></span>
+                            ) : null}
+                            Load thêm
+                        </button>
                     </div>
-                    <div className="text-left space-y-1 text-sm">
-                        <div className="flex justify-between">
-                            <span>Mã đơn: #12345</span>
-                            <span>01/01/2024</span>
-                        </div>
-                        <div>Khách hàng: Nguyễn Văn A</div>
-                        <div className="border-t pt-2 mt-2">
-                            <div>Sản phẩm: Laptop Dell</div>
-                            <div>Số lượng: 1</div>
-                            <div>Giá: 15,000,000 VNĐ</div>
-                        </div>
-                    </div>
-                </div>
-                <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                    🖨️ In đơn hàng
-                </button>
-            </div>
+            )}
+      </div>
         </div>
     );
 }

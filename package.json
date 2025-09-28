@@ -22,7 +22,8 @@
     "react-dom": "19.1.0",
     "react-image": "^4.1.0",
     "sockjs-client": "^1.6.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "swr": "^2.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,108 +1,71 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { Plus, Building2, Search } from "lucide-react";
-import PrintShopFormModal, { CreatePrintShopDto } from "../_components/PrintShopForm";
+"use client"
+import { Building2, Plus, Search } from "lucide-react";
 import ConfirmationModal from "../_components/ConfirmationModal";
+import PrintShopFormModal, { CreatePrintShopDto } from "../_components/PrintShopForm";
 import PrintShopList from "../_components/PrintShopList";
 import { craterPrinter, deletePrinter, getAllPrinter, updatePrinter } from "@/service/print/print-service";
+import { useMemo, useState } from "react";
 import { PrintShop } from "@/service/types/ApiResponse";
+import { usePrinters } from "@/lib/customHooks/usePrinters";
 
-export interface PrintRequesst {
-  name: string;
-  description: string;
-}
-
-// Main Page Component
 export default function PrintShopsPage() {
-  const [shops, setShops] = useState<PrintShop[]>([]);
-
-  const [editingShop, setEditingShop] = useState<PrintShop | null>(null);
+  const [editingPrinter, setEditingPrinter] = useState<PrintShop | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<PrintShop | null>(null);
+  const [deletePrinterConfirm, setDeletePrinterConfirm] = useState<PrintShop | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const loadPrinter = async () =>{
-     try{
-        const response = await getAllPrinter();
-        setShops(response.result)
-    }catch(error: any){
-        alert(error.message || "Lỗi")
-    }
-  }
-
-  useEffect(() =>{
-    loadPrinter();
-  },[])
-
-  // Filter shops theo search
-  const filteredShops = shops.filter(shop =>
-    shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shop.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const { data: printersResponse, refresh } = usePrinters();
+  const printers = (printersResponse?.result ?? []).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+  
 
-  // Thêm mới nhà in
+  const filteredPrinters = useMemo(() => {
+    return printers.filter((printer) =>
+      printer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      printer.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [printers, searchTerm]);
+
+  // Thêm mới printer
   const handleAdd = async (data: CreatePrintShopDto) => {
-    const newPrinter: PrintRequesst ={
-        name: data.name,
-        description: data.description
-    };
-    
-    try{
-        const response = await craterPrinter(newPrinter);
-        console.log(response)
-        setShops(prev => [response.result,...prev])
-    }catch(error: any){
-        alert(error.message || "Lỗi")
+    try {
+      await craterPrinter({ name: data.name, description: data.description });
+      refresh();
+    } catch (error: any) {
+      alert(error.message || "Lỗi");
     }
-
-
     setShowAddModal(false);
   };
 
-  // Cập nhật nhà in
+  // Update printer
   const handleUpdate = async (data: CreatePrintShopDto) => {
-    if (!editingShop) return;
-     try{
-        const newPrinter: PrintRequesst ={
-            name: data.name,
-            description: data.description
-        };
-        const response = await updatePrinter(editingShop.id, newPrinter);
-        
-        setShops(prev =>
-            prev.map(shop => (shop.id === editingShop.id ? { ...response.result } : shop))
-        );
-        setEditingShop(null); // đóng modal edit
-    }catch(error: any){
-        alert(error.message || "Lỗi")
+    if (!editingPrinter) return;
+    try {
+      await updatePrinter(editingPrinter.id, { name: data.name, description: data.description });
+      refresh();
+      setEditingPrinter(null);
+    } catch (error: any) {
+      alert(error.message || "Lỗi");
     }
   };
 
-  // Xác nhận xóa
-  const handleDelete = (shop: PrintShop) => {
-    setDeleteConfirm(shop);
-  };
-
+  // Delete printer
   const confirmDelete = async () => {
-    if (!deleteConfirm) return;
-    try{
-        await deletePrinter(deleteConfirm.id);
-        setShops((prev) => prev.filter(item => item.id !== deleteConfirm.id));
-        setDeleteConfirm(null);
-    }catch(error: any){
-        alert(error.message || "Lỗi")
+    if (!deletePrinterConfirm) return;
+    try {
+      await deletePrinter(deletePrinterConfirm.id);
+      refresh();
+      setDeletePrinterConfirm(null);
+    } catch (error: any) {
+      alert(error.message || "Lỗi");
     }
-  };
-
-  // Mở modal edit
-  const handleEdit = (shop: PrintShop) => {
-    setEditingShop(shop); // modal sẽ tự mở vì isOpen = !!editingShop
   };
 
   return (
-    <div className="bg-gray-50 h-[90vh]"  >
+    <div className="bg-gray-50 h-[90vh]">
       <div className="mx-auto p-2 flex flex-col h-full">
+        {/* Header */}
         <div className="mb-8 flex gap-4 ">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
@@ -114,7 +77,7 @@ export default function PrintShopsPage() {
             </div>
           </div>
 
-          {/* Actions Bar */}
+          {/* Actions */}
           <div className="flex flex-1 flex-col sm:flex-row gap-4 items-end sm:items-center justify-end">
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-md">
@@ -128,10 +91,10 @@ export default function PrintShopsPage() {
                 />
               </div>
               <div className="text-sm text-gray-500">
-                {filteredShops.length} / {shops.length} nhà in
+                {filteredPrinters.length} / {printers.length} nhà in
               </div>
             </div>
-            
+
             <button
               onClick={() => setShowAddModal(true)}
               className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2 shadow-md"
@@ -142,16 +105,15 @@ export default function PrintShopsPage() {
           </div>
         </div>
 
-        {/* Shops List */}
+        {/* Printers List */}
         <div className="flex-1">
-            <PrintShopList
-                data={filteredShops}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-            />
+          <PrintShopList
+            data={filteredPrinters}
+            onEdit={setEditingPrinter}
+            onDelete={setDeletePrinterConfirm}
+          />
         </div>
 
-        {/* Modals */}
         {/* Add Modal */}
         <PrintShopFormModal
           isOpen={showAddModal}
@@ -161,26 +123,25 @@ export default function PrintShopsPage() {
 
         {/* Edit Modal */}
         <PrintShopFormModal
-          key={editingShop?.id ?? "new"} // bắt buộc remount khi edit shop khác
-          isOpen={!!editingShop}
-          initialData={editingShop || undefined}
+          key={editingPrinter?.id ?? "new"}
+          isOpen={!!editingPrinter}
+          initialData={editingPrinter || undefined}
           onSubmit={handleUpdate}
-          onClose={() => setEditingShop(null)}
+          onClose={() => setEditingPrinter(null)}
         />
 
         {/* Delete confirmation */}
         <ConfirmationModal
-          isOpen={!!deleteConfirm}
+          isOpen={!!deletePrinterConfirm}
           title="Xác nhận xóa nhà in"
-          message={`Bạn có chắc chắn muốn xóa nhà in "${deleteConfirm?.name}"? Hành động này không thể hoàn tác.`}
+          message={`Bạn có chắc chắn muốn xóa nhà in "${deletePrinterConfirm?.name}"? Hành động này không thể hoàn tác.`}
           confirmText="Xóa"
           cancelText="Hủy"
           onConfirm={confirmDelete}
-          onCancel={() => setDeleteConfirm(null)}
+          onCancel={() => setDeletePrinterConfirm(null)}
           type="danger"
         />
       </div>
     </div>
   );
 }
-

@@ -29,13 +29,13 @@ export default function ReturnsPage() {
             const response = await getRefundAllShop(param)
             console.log(response);
 
-            let listRefund : Return [] = [...response.result.orders]
+            let listRefund : Return [] = [...response.result.data]
 
             if(append) {
-                listRefund = [...(refunds?.orders || []),...(response.result.orders || [])];
+                listRefund = [...(refunds?.data || []),...(response.result.data || [])];
             }
             const pageRespone: RefundResponse = {
-                orders : listRefund,
+                data : listRefund,
                 current_page: response.result.current_page,
                 last: response.result.last,
                 total_count: response.result.total_count
@@ -48,7 +48,6 @@ export default function ReturnsPage() {
         }
     }
     return <>
-        <LoadingOverlay show={loading}/>
         {refunds && <ReturnsDashboard data={refunds} search={load} loading = {loading} keywordParam={orderIdParam} />}
     </>
 }

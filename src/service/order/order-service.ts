@@ -1,7 +1,8 @@
 
 import axios from 'axios';
 import axiosClient from '@/lib/axiosClient';
-import { ApiResponse, AuthError, Order, OrderListResponse } from '../types/ApiResponse';
+import { ApiResponse, AuthError, Order, OrderListResponse, OrderListResponseTiktok } from '../types/ApiResponse';
+import { PrintSkuRequest } from '../types/PrintOrder';
 
 export type GetOrderParam = {
     shopId?: string;
@@ -17,7 +18,7 @@ export type GetOrderParam = {
 
 export const getOrderInShop = async (param : GetOrderParam) => {
   try {
-    const response = await axiosClient.post<OrderListResponse>(
+    const response = await axiosClient.post<OrderListResponseTiktok>(
       `/order/list/${param.shopId}`,
       {},
       {
@@ -175,10 +176,36 @@ export const exportOrderSelected = async (param: { orderIds: string[]}) => {
 }
 
 
-export const updatePrinterSku = async (orderItemId: string, skuId : string) => {
+export const updatePrinterSku = async (orderItemId: string, printSku : PrintSkuRequest) => {
   try {
     const response = await axiosClient.post<ApiResponse<Order>>(
-      `/order/update-sku-print-id/${orderItemId}/${skuId}`,
+      `/order/update-sku-print-id/${orderItemId}`, printSku
+    );
+    if (response.data.code === 1000) {
+      return response.data;
+    }
+    throw new AuthError(500, "Invalid response from server");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const serverError = error.response?.data as ApiResponse<any>;
+      throw new AuthError(
+        serverError.code || 500,
+        serverError.message || "Login failed. Please try again."
+      );
+    }
+    throw new AuthError(500, "An unexpected error occurred. Please try again.");
+  }
+}
+
+export const updatePrintShippMethod = async (orderId: string, method : string | null) => {
+  try {
+    const response = await axiosClient.post<ApiResponse<Order>>(
+      `/order/update-print-shipping-method/${orderId}`, {},
+    {
+      params: {
+        method: method
+      }
+    }
     );
     if (response.data.code === 1000) {
       return response.data;

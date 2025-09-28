@@ -12,6 +12,9 @@ import LoadingOverlay from "@/components/UI/LoadingOverlay";
 import ImportDropdown from "../_components/ImportDropdown";
 import { getAllPrinter } from "@/service/print/print-service";
 import { useSearchParams } from "next/navigation";
+import { usePrinters } from "@/lib/customHooks/usePrinters";
+import { useShops } from "@/lib/customHooks/useShops";
+import { Message } from "@/service/types/websocketMessageType";
 
 const statusOptions = [
     { value: "UNPAID", label: "Unpaid" },
@@ -42,34 +45,39 @@ export default function OrderAllShopView() {
     const [orderId, setOrderId] = useState<string>(orderIdParam);
     const [page, setPage] = useState<number>(0);
     const [isLast, setIsLast] = useState<boolean>(true);
-    const [shops, setShops] = useState<Option[]>([]);
-    const [shopLoading, setShopLoading] = useState<boolean>(true);
     const [selectedShops, setSelectedShops] = useState<string[]>([]);
     const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
     const [exportLoading, setExporting] = useState<boolean>(false);
-    const [printers, setPrinter] = useState<PrintShop[]>([]);
     const [totalOrders, setTotalOrders] = useState<number>(0);
     
     const wsClient = useWebSocket(); 
     const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-    // WebSocket effect
+    const { data: printersResponse } = usePrinters();
+    const printers: PrintShop[] = (printersResponse?.result ?? []).sort(
+        (a: PrintShop, b: PrintShop) =>
+            new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+    
+    const { data: shopsResponse, isLoading: shopLoading } = useShops();
+    const shops = (shopsResponse?.result ?? []).sort(
+        (a: ShopResponse, b: ShopResponse) =>
+            new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+
+    const optionShops: Option[] = shops.map((item: ShopResponse) => ({
+        value: item.id,
+        label: item.userShopName,
+    }));
+
     useEffect(() => {
         const callback = (msg: IMessage) => {
-            const updatedOrder: Order = JSON.parse(msg.body);
-            console.log(updatedOrder)
-            setOrders((prev) => {
-                const exists = prev.some((o) => o.id === updatedOrder.id);
-                if (exists) {
-                    return prev.map((o) =>
-                        o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o
-                    );
-                } else {
-                    return [updatedOrder, ...prev];
-                }
-            });
+            const updated: Message<Order> = JSON.parse(msg.body);
+            if(updated.event === "UPDATE") {
+                const newOrder = updated.data;
+                updateAOrder(newOrder)
+            }
         };
-        
         wsClient.subscribe("/user/queue/orders", callback);
         return () => {
             wsClient.unsubscribe("/user/queue/orders");
@@ -80,12 +88,6 @@ export default function OrderAllShopView() {
     useEffect(() => {
         fetchOrders(0);
     }, [status, shipBy, selectedShops]);
-
-    // Load initial data
-    useEffect(() => {
-        loadData();
-    }, []);
-
     // Search handler with validation
     const handlerSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -123,7 +125,7 @@ export default function OrderAllShopView() {
                 shopIds: selectedShops 
             });
             
-            const newOrders = response?.result?.orders || [];
+            const newOrders = response?.result?.data || [];
             
             if (newPage === 0) {
                 setOrders(newOrders);
@@ -151,58 +153,10 @@ export default function OrderAllShopView() {
             setLoading(false);
         }
     };
-
-    // Load printer data
-    const loadPrinter = async () => {
-        try {
-            const response = await getAllPrinter();
-            const printer: PrintShop[] = response?.result || [];
-            setPrinter(printer);
-        } catch (e) {
-            console.error('Load printer error:', e);
-        }
-    }
-
-    // Load shop data
-    const loadShops = async () => {
-        try {
-            const response = await getMyShop();
-            const shopsResponse: ShopResponse[] = response.result
-                ? Array.isArray(response.result)
-                    ? response.result
-                    : [response.result]
-                : [];
-                
-            const optionShops: Option[] = shopsResponse.map(item => ({
-                value: item.id,
-                label: item.userShopName
-            }));
-            setShops(optionShops);
-        } catch (error) {
-            console.error("Load shops error:", error);
-        }
-    }
-
-    // Load all initial data
-    const loadData = async () => {
-        try {
-            setShopLoading(true);
-            await Promise.all([
-                loadPrinter(),
-                loadShops()
-            ]);
-        } catch (error) {
-            console.error("Error when loading data:", error);
-        } finally {
-            setShopLoading(false);
-        }
-    };
-
     // Validation function
     function is18Digit(str: string) {
         return /^\d{18}$/.test(str);
     }
-
     // Shop selection handler
     const handleSelected = (selected: Option[]) => {
         console.log("Selected (debounced):", selected);
@@ -258,12 +212,8 @@ export default function OrderAllShopView() {
         try {
             const finalPrinterId = !printerId ? "REMOVE" : printerId;
             const response = await updatePrinterOrder(orderId, finalPrinterId);
-            
-            setOrders(prev => 
-                prev.map(order => 
-                    order.id === orderId ? { ...response.result } : order
-                )
-            ); 
+            const newOrder : Order = response.result;
+            updateAOrder(newOrder)
         } catch (e: any) {
             console.error('Update printer error:', e);
             alert(e.message || "Lỗi khi cập nhật máy in");
@@ -318,6 +268,10 @@ export default function OrderAllShopView() {
             </div>
         </div>
     );
+
+    const updateAOrder = ( newOrder : Order) =>{
+        setOrders(prevOrders => prevOrders.map(o => o.id === newOrder.id ? newOrder : o));
+    }
 
     return (
         <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col ">
@@ -406,7 +360,7 @@ export default function OrderAllShopView() {
                     <div>
                         <div className="min-w-[240px]">
                             <MultiSelect
-                                options={shops}
+                                options={optionShops}
                                 loading={shopLoading}
                                 onChange={debouncedHandleSelected}
                             />

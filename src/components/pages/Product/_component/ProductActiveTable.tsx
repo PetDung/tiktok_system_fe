@@ -8,6 +8,7 @@ import LoadingIndicator from "@/components/UI/LoadingIndicator";
 import ModalShopAdd from "./ModalShopAdd";
 import { useAuth } from "@/Context/AuthContext";
 import RoleGuard from "@/components/UI/RoleGuard";
+import ThumbPreview from "../../Design/_components/ThumbPreview";
 
 type Props = {
   products: Product[];
@@ -69,6 +70,7 @@ export default function ProductActiveTable({
           <tr>
             <th className="px-4 py-3 text-left font-bold text-gray-700">STT</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">ID</th>
+            <th className="px-2 py-2 text-left font-bold text-gray-700">Images</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">Shop</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">Thời gian</th>
             <th className="px-4 py-3 text-left font-bold text-gray-700">Product</th>
@@ -87,6 +89,18 @@ export default function ProductActiveTable({
                 >
                   <td className="px-4 py-3 text-gray-600">{index + 1}</td>
                   <td className="px-4 py-3 text-gray-600">{product.id}</td>
+                  <td className="px-2 py-2">
+                    <div className="grid grid-cols-3 gap-1">
+                      {product?.mainImages?.map((item) => (
+                        <ThumbPreview
+                          key={item.uri}
+                          thumbUrl={item.thumb_urls[0]}
+                          fullImageUrl={item.urls[0]}
+                          size={40}
+                        />
+                      ))}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 font-medium text-gray-800">
                     {product.shop.userShopName || "-"}
                   </td>

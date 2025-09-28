@@ -1,43 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, X, Store, Plus, Check, Filter } from 'lucide-react';
-import { ShopResponse } from '@/service/types/ApiResponse';
-import { getMyShop } from '@/service/shop/shop-service';
+import { Product, ShopResponse } from '@/service/types/ApiResponse';
 import { uploadProduct, UploadProductParam } from '@/service/product/product-service';
+import { useShops } from '@/lib/customHooks/useShops';
+import LoadingIndicator from '@/components/UI/LoadingIndicator';
 
 interface ModalProps {
     onClose: () => void;
-    product?: any;
+    product: Product;
 }
 
 export default function ModalShopAdd({ onClose, product }: ModalProps) {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [shops, setShops] = useState<ShopResponse[]>([]);
     const [selectedShops, setSelectedShops] = useState<string[]>([]);
-    const [filteredShops, setFilteredShops] = useState<ShopResponse[]>([]);
     const [selectedOwner, setSelectedOwner] = useState<string>("");
 
-    useEffect(() => {
-        loadShop();
-    }, []);
+    const { data: shopsResponse, isLoading: loadingShop } = useShops();
+    const shops = (shopsResponse?.result ?? []).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
 
-    const loadShop = async () => {
-        setLoading(true)
-        await getMyShop()
-            .then(data => {
-                setShops(data.result);
-                setFilteredShops(data.result);
-            })
-            .catch((e) => {
-                alert(e)
-            })
-            .finally(() => {
-                setLoading(false)
-            })
-    }
-
-    // Filter shops based on search term and owner filter
-    useEffect(() => {
+    const filteredShops: ShopResponse[] = useMemo(() =>{
         let filtered = shops;
         
         // Filter by search term
@@ -53,10 +37,10 @@ export default function ModalShopAdd({ onClose, product }: ModalProps) {
         if (selectedOwner.trim() !== "") {
             filtered = filtered.filter(shop => shop.ownerName === selectedOwner);
         }
-        
-        setFilteredShops(filtered);
-    }, [searchTerm, shops, selectedOwner]);
 
+        return filtered
+    }, [searchTerm, shops, selectedOwner])
+    
     // Get unique owners for filter dropdown
     const uniqueOwners = Array.from(new Set(shops.map(shop => shop.ownerName))).sort();
 
@@ -142,7 +126,7 @@ export default function ModalShopAdd({ onClose, product }: ModalProps) {
                 </div>
 
                 {/* Shop List */}
-                <div className="flex-1 overflow-y-auto h-full">
+               {loadingShop? <LoadingIndicator/> :  (<div className="flex-1 overflow-y-auto h-full">
                     {filteredShops.length === 0 ? (
                         <div className="p-8 text-center">
                             <Store className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -158,7 +142,7 @@ export default function ModalShopAdd({ onClose, product }: ModalProps) {
                                     <div
                                         key={shop.id}
                                         onClick={() => handleShopSelect(shop.id)}
-                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200  ${
                                             isSelected
                                                 ? 'border-blue-500 bg-blue-50 shadow-md'
                                                 : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
@@ -188,6 +172,9 @@ export default function ModalShopAdd({ onClose, product }: ModalProps) {
                                                             TikTok: {shop.tiktokShopName}
                                                         </p>
                                                     )}
+                                                    <p className="text-sm text-green-600 truncate">
+                                                        {shop.productUpload && shop.productUpload.includes(product.id)? "Đã upload" : "Chưa upload"}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
@@ -205,7 +192,7 @@ export default function ModalShopAdd({ onClose, product }: ModalProps) {
                             })}
                         </div>
                     )}
-                </div>
+                </div>)}
 
                 {/* Footer */}
                 <div className="p-6 border-t border-gray-100">
@@ -222,14 +209,14 @@ export default function ModalShopAdd({ onClose, product }: ModalProps) {
                             </button>
                             <button
                                 onClick={handleSubmit}
-                                disabled={selectedShops.length === 0 || loading}
+                                disabled={selectedShops.length === 0 || loading  || loadingShop }
                                 className={`px-6 py-2.5 rounded-xl font-medium transition-all flex items-center space-x-2 ${
                                     selectedShops.length === 0 || loading
                                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                         : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
                                 }`}
                             >
-                                {loading ? (
+                                {loading  || loadingShop ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                         <span>Đang thêm...</span>

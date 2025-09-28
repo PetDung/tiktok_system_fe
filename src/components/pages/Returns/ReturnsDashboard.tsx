@@ -20,7 +20,7 @@ const ReturnsDashboard: React.FC<ReturnsDashboardProps> = ({ data, search, loadi
 
     const filteredAndSortedOrders = useMemo(() => {
 
-        let filtered = data.orders || [];
+        let filtered = data.data || [];
         // Apply sorting
         filtered.sort((a, b) => {
             if (sortBy === 'date') {
@@ -31,7 +31,7 @@ const ReturnsDashboard: React.FC<ReturnsDashboardProps> = ({ data, search, loadi
         });
 
         return filtered;
-    }, [data.orders, sortBy]);
+    }, [data.data, sortBy]);
 
     useEffect(() => {
         const observer = new IntersectionObserver(

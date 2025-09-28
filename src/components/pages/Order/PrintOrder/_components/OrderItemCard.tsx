@@ -8,6 +8,7 @@ import { updatePrinterSku } from "@/service/order/order-service";
 import { LineItem } from "@/service/types/ApiResponse";
 import { X } from "lucide-react";
 import { clearDesignInItem } from "@/service/design/design-service";
+import { PrintSkuRequest } from "@/service/types/PrintOrder";
 
 export type OptionSelect = {
     type: string;
@@ -19,10 +20,12 @@ export default function OrderItemCard({
     item,
     attribute,
     openAddDesign,
+    disabledSelect = false
 }: {
     item: LineItemHasQuantity;
     attribute: AttributeFull | null;
     openAddDesign: (data: LineItem) => void;
+    disabledSelect?: boolean
 }) {
     const [optionSelect, setOptionSelect] = useState<OptionSelect>({
         type: "",
@@ -61,7 +64,7 @@ export default function OrderItemCard({
     /** Lấy danh sách màu dựa vào type đã chọn */
     const colors: string[] = useMemo(() => {
         if (!attribute || !optionSelect.type) return [];
-
+         console.log(item.lineItem.id)
         if (attribute.code === "PRH") {
             const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
             const matched = orderOrigin.find((o) => o.name === optionSelect.type);
@@ -138,16 +141,34 @@ export default function OrderItemCard({
         return null;
     }, [attribute, optionSelect]);
 
+    const skuOption = useMemo(() => {
+        const lineItem = item.lineItem;
+
+        if(!lineItem.print_sku) return "Chưa có"
+
+        return `${lineItem.print_sku.type} 
+                -${lineItem.print_sku.value1}
+                -${lineItem.print_sku.value2}
+                ` 
+    }, [item])
+
 
     useEffect(() => {
         if (!sku) return;
 
+        const printSku: PrintSkuRequest = {
+            skuCode: sku,
+            value1 : optionSelect.color,
+            value2 : optionSelect.size,
+            type: optionSelect.type
+        }
+
         const updateSku = async () => {
             try {
-                await updatePrinterSku(item.lineItem.id, sku)
+                await updatePrinterSku(item.lineItem.id, printSku)
                 console.log("✅ SKU updated:", sku);
             } catch (err) {
-                console.error("❌ Update SKU failed", err);
+                alert("❌ Update SKU failed");
             }
         };
         updateSku();
@@ -176,15 +197,18 @@ export default function OrderItemCard({
                     <p className="text-xs text-gray-600 mb-1">Loại: {item.lineItem.sku_name}</p>
                     <p className="text-sm text-gray-600">Số lượng: {item.quantity}</p>
                     <p className="text-sm text-gray-600">
-                        Sku print: {sku || item.lineItem.sku_print || "Chưa có"}
+                        Sku code: {item.lineItem.print_sku?.skuCode?? "Chưa có" }
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        Sku: {skuOption}
                     </p>
                 </div>
                 <div className="flex-shrink-0">
                     {item.lineItem.design?.thumbnail ? (
                         <div className="relative">
                             <ThumbPreview size={60} thumbUrl={item.lineItem.design.thumbnail} />
-                            {item.lineItem.design && (
-                                <button
+                            {!disabledSelect && (
+                                <button 
                                     type="button"
                                     onClick={() => clear(item.lineItem.id)}
                                     className="absolute top-0 right-0 bg-white rounded-full w-5 h-5 flex items-center justify-center text-red-500 shadow-md hover:bg-gray-100"
@@ -203,7 +227,8 @@ export default function OrderItemCard({
                 </div>
             </div>
 
-            <div className="flex justify-center gap-3 pt-2 border-t border-gray-100">
+           {
+            !disabledSelect &&  <div className="flex justify-center gap-3 pt-2 border-t border-gray-100">
                 {attribute ? (
                     <>
                         {/* Type */}
@@ -214,6 +239,7 @@ export default function OrderItemCard({
                                 onChange={(e) =>
                                     setOptionSelect({ type: e.target.value, color: "", size: "" })
                                 }
+                                disabled={disabledSelect}
                                 className="px-3 min-w-[120px] max-w-[200px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="-- Type --"
                             />
@@ -234,7 +260,7 @@ export default function OrderItemCard({
                                 onChange={(e) =>
                                     setOptionSelect({ ...optionSelect, color: e.target.value, size: "" })
                                 }
-                                disabled={!optionSelect.type}
+                                disabled={!optionSelect.type || disabledSelect}
                                 className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder={loadingColors ? "Đang tải..." : "-- Color --"}
                             />
@@ -253,7 +279,7 @@ export default function OrderItemCard({
                                 onChange={(e) =>
                                     setOptionSelect({ ...optionSelect, size: e.target.value })
                                 }
-                                disabled={!optionSelect.color}
+                                disabled={!optionSelect.color  || disabledSelect}
                                 className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="-- Size --"
                             />
@@ -269,6 +295,7 @@ export default function OrderItemCard({
                 )}
             </div>
 
+           }
 
         </div>
     );
