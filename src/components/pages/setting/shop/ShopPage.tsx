@@ -19,7 +19,7 @@ export default function ShopsPage() {
     try {
       const response = await getMyShopPage(pageNumber, size); // nếu BE support search
       setShops((prev) =>
-        append ? [...prev, ...response.result.orders] : response.result.orders
+        append ? [...prev, ...response.result.data] : response.result.data
       );
       setPage(response.result.current_page || 0);
       setLast(response.result.last || false);
