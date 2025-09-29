@@ -120,7 +120,7 @@ export async function mappingDesign(param : ParamMapping) {
 export async function createDesign(param : DesignRequest) {
 
      try {
-        const response = await axiosClient.post<any>(`/design`,
+        const response = await axiosClient.post<ApiResponse<Design>>(`/design`,
             param
         );
         if (response.data.code === 1000) {

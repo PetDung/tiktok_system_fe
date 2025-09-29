@@ -1,3 +1,5 @@
+import { dataMKP, SKUMPK } from "./data";
+
 export interface CategoryPrintPrinteesHub {
   category: string;
   name: string;
@@ -92,7 +94,7 @@ export const getVariationsMenPrint = async (): Promise<MenPrintData<ProductMenPr
     };
   }
 };
-export const getSkuMenPrint = async (prouduct_code: string): Promise<MenPrintData<MenPrintSku>> => {
+export const getSkuMenPrint = async (prouduct_code: string): Promise<MenPrintSku[]> => {
   try {
     let page = 1;
     let allData: MenPrintSku[] = [];
@@ -118,12 +120,13 @@ export const getSkuMenPrint = async (prouduct_code: string): Promise<MenPrintDat
 
       page++;
     }
-    return { data: allData, pagination };
+    return allData
   } catch (err: any) {
     console.error("Error fetching sku variations:", err.message);
-    return {
-      data: [],
-      pagination: { limit: 0, page: 1, count: 0 },
-    };
+    return []
   }
+};
+
+export const fetchSkuMKP = async (): Promise<SKUMPK[]> => {
+  return Promise.resolve(dataMKP as SKUMPK[]);
 };

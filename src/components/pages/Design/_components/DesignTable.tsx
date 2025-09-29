@@ -62,15 +62,15 @@ const DesignCard = React.memo(({
   return (
     <div
       className={`relative group bg-white rounded-xl border-2 transition-all duration-200 hover:shadow-lg cursor-pointer ${isSelected
-          ? 'border-blue-500 shadow-md ring-2 ring-blue-200'
-          : 'border-gray-200 hover:border-gray-300'
+        ? 'border-blue-500 shadow-md ring-2 ring-blue-200'
+        : 'border-gray-200 hover:border-gray-300'
         }`}
       onClick={() => onSelect(design.id)}
     >
       {/* Selection indicator */}
       <div className={`absolute top-3 left-3 z-10 w-5 h-5 rounded-full border-2 transition-all duration-200 ${isSelected
-          ? 'bg-blue-500 border-blue-500'
-          : 'bg-white border-gray-300 group-hover:border-blue-400'
+        ? 'bg-blue-500 border-blue-500'
+        : 'bg-white border-gray-300 group-hover:border-blue-400'
         }`}>
         {isSelected && (
           <svg className="w-3 h-3 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -162,7 +162,10 @@ function DesignTableBase({
       filtered = designs.filter((d) => d.name.toLowerCase().includes(query));
     }
 
-    return filtered;
+    // Sort by createdAt (mới nhất trước)
+    return [...filtered].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }, [designs, designSearch]);
 
   const onChangeSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,9 +192,7 @@ function DesignTableBase({
   }, [setSelectedDesign]);
 
   const onDelete = useCallback((id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa design này?')) {
-      handleDeleteDesign(id);
-    }
+    handleDeleteDesign(id);
   }, [handleDeleteDesign]);
 
   const openAdd = useCallback(() => setOpen(true), [setOpen]);
@@ -234,8 +235,8 @@ function DesignTableBase({
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded transition-colors ${viewMode === 'grid'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
                   }`}
               >
                 <Grid className="w-4 h-4" />
@@ -243,8 +244,8 @@ function DesignTableBase({
               <button
                 onClick={() => setViewMode('table')}
                 className={`p-2 rounded transition-colors ${viewMode === 'table'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
                   }`}
               >
                 <List className="w-4 h-4" />
@@ -301,13 +302,13 @@ function DesignTableBase({
                       </label>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        <ThumbPreview
-                          thumbUrl={design.thumbnail || ""}
-                          alt={design.name}
-                          size={150}
-                        />
-                      </div>
+                       <div className="aspect-square">
+                          <ThumbPreview
+                            thumbUrl={design.thumbnail || ""}
+                            alt={design.name}
+                            size={60}
+                          />
+                        </div>
                     </td>
                     <td className="py-4 px-4">
                       <div className="font-medium text-gray-900">{design.name}</div>

@@ -31,7 +31,6 @@ export default function ExcelExportButton<T>({
     columns,
     fileName = "data.xlsx",
     buttonText = "Export Excel",
-    className,
 }: Props<T>) {
     const handleExport = () => {
         const formatted = data.map((row) => {

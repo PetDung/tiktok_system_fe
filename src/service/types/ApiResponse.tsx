@@ -265,6 +265,7 @@ export interface Design {
   leftSide?: string;
   rightSide?: string;
   thumbnail?: string;
+  createdAt : Date;
 }
 export interface PrintShop {
   id: string;

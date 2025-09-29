@@ -1,14 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Upload } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { getMyShop } from "@/service/shop/shop-service";
 import { getProdcDetails } from "@/service/product/product-service";
 import {
   createDesign,
   deleteDesign,
-  getAllDesigns,
-  getDesignBSkuAndProduct,
   mappingDesign,
   ParamMapping,
 } from "@/service/design/design-service";
@@ -21,6 +17,8 @@ import DesignModal, { DesignRequest } from "../_components/AddDesign";
 import SearchBar from "../_components/SearchBar";
 import SkuTable from "../_components/SkuTable";
 import DesignTable from "../_components/DesignTable";
+import { useDesigns } from "@/lib/customHooks/useDesgins";
+import { useShops } from "@/lib/customHooks/useShops";
 
 export default function MappingDesignPage() {
   const searchParams = useSearchParams();
@@ -33,17 +31,24 @@ export default function MappingDesignPage() {
   const [skuSearch, setSkuSearch] = useState(skuIdParam);
   const [designSearch, setDesignSearch] = useState("");
 
-  const [shops, setShops] = useState<ShopResponse[]>([]);
   const [productDetails, setProductDetails] = useState<ProductDetails>();
   const [skus, setSkus] = useState<Sku[]>([]);
-  const [designs, setDesigns] = useState<Design[]>([]);
 
   const [selectedSkus, setSelectedSkus] = useState<string[]>([]);
   const [selectedDesign, setSelectedDesign] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  
+
+
+  const {data : designResponse, updateCache : updateCacheDesigns} = useDesigns();
+  const designs: Design[] = designResponse?.result ?? [];
+  const { data: shopsResponse, isLoading: shopLoading } = useShops();
+  const shops = (shopsResponse?.result ?? []).sort(
+    (a: ShopResponse, b: ShopResponse) =>
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+  );
+
   // Updated filters to support multiple values per attribute
   const [filters, setFilters] = useState<{ [key: string]: string[] }>({});
 
@@ -51,8 +56,6 @@ export default function MappingDesignPage() {
     (async () => {
       setLoading(true);
       try {
-        await fetchShop();
-        await fetchDesign();
         if (productIdParam && shopIdParam) {
           await handleSearch();
         }
@@ -63,17 +66,6 @@ export default function MappingDesignPage() {
       }
     })();
   }, []);
-
-  const fetchShop = async () => {
-    const responseShopFetch = await getMyShop();
-    setShops(responseShopFetch.result);
-  };
-
-  const fetchDesign = async () => {
-    const responseDesignFetch = await getAllDesigns();
-    setDesigns(responseDesignFetch.result);
-  };
-
   const handleSearch = async () => {
     setLoading(true);
     try {
@@ -137,8 +129,12 @@ export default function MappingDesignPage() {
 
   const handleSubmitDesign = async (data: DesignRequest) => {
     try {
-      await createDesign(data);
-      await fetchDesign();
+      const response =  await createDesign(data);
+      const newDesgin = response.result;
+      updateCacheDesigns({
+        ...designResponse!, // giữ nguyên status, message cũ
+        result: [newDesgin, ...designResponse?.result || []]
+      });
       alert("Thêm design thành công!");
     } catch (error) {
       console.error(error);
@@ -155,9 +151,13 @@ export default function MappingDesignPage() {
       const response = await deleteDesign(designId);
       if (response.code === 1000) {
         alert("Xóa design thành công");
-        await fetchDesign();
-        
-        // Clear selected design if it was the deleted one
+        updateCacheDesigns({
+          ...designResponse!, // giữ nguyên status, message cũ
+          result: designResponse?.result
+            ? designResponse.result.filter(item => item.id !== designId)
+            : []
+        });
+
         if (selectedDesign === designId) {
           setSelectedDesign("");
         }

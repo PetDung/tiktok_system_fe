@@ -9,6 +9,7 @@ import { LineItem } from "@/service/types/ApiResponse";
 import { X } from "lucide-react";
 import { clearDesignInItem } from "@/service/design/design-service";
 import { PrintSkuRequest } from "@/service/types/PrintOrder";
+import { useFetch } from "@/lib/useFetch";
 
 export type OptionSelect = {
     type: string;
@@ -32,34 +33,13 @@ export default function OrderItemCard({
         size: "",
         color: "",
     });
+    const { data: skuMenPrintRs, isLoading: loadingColors } = useFetch<MenPrintSku[]>({
+        fetcher: getSkuMenPrint,
+        key: "men-print-sku",
+        param : optionSelect.type
+    });
 
-    const [skuMenPrint, setSkuMenPrint] = useState<MenPrintSku[]>([]);
-    const [loadingColors, setLoadingColors] = useState(false);
-
-    useEffect(() => {
-        if (!attribute || !optionSelect.type || attribute.code !== "MP") {
-            setSkuMenPrint([]);
-            return;
-        }
-
-        const fetchSku = async () => {
-            try {
-                setLoadingColors(true);
-                const response = await getSkuMenPrint(optionSelect.type);
-                setSkuMenPrint(response.data);
-            } catch (e: any) {
-                console.error("Lỗi fetch SKU:", e.message);
-                alert("Lỗi!");
-                setSkuMenPrint([]);
-            }
-            finally {
-                setLoadingColors(false);
-            }
-        };
-
-        fetchSku();
-    }, [attribute, optionSelect.type]);
-
+    const  skuMenPrint = skuMenPrintRs ? skuMenPrintRs : [] ;
 
     /** Lấy danh sách màu dựa vào type đã chọn */
     const colors: string[] = useMemo(() => {
@@ -180,7 +160,6 @@ export default function OrderItemCard({
         } catch (e: any) {
             console.error("Lỗi fetch SKU:", e.message);
             alert("Lỗi!");
-            setSkuMenPrint([]);
         }
     }
 

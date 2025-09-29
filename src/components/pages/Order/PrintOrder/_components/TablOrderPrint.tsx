@@ -8,6 +8,7 @@ import OptionalSelect, { Option } from "@/components/UI/OptionalSelect";
 import { changePrinterStatus, updatePrinterOrder, updatePrintShippMethod } from "@/service/order/order-service";
 import { PrintShippMethod } from "@/service/types/PrintOrder";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
+import { SKUMPK } from "@/service/print-order/data";
 
 export type OrderWithFlag = Order & { _isRemoving?: boolean };
 
@@ -17,7 +18,8 @@ type Props = {
     productMenPrint: ProductMenPrint[];
     printers: PrintShop[];
     setOrder: React.Dispatch<React.SetStateAction<Order[]>>;
-    printShippingMethods: PrintShippMethod[]
+    printShippingMethods: PrintShippMethod[],
+    skuMPK: SKUMPK[]
 };
 
 export type Attribute = {
@@ -48,7 +50,8 @@ export default function TablOrderPrint({
     productMenPrint,
     printers,
     setOrder,
-    printShippingMethods
+    printShippingMethods,
+    skuMPK
 }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [orderSelect, setOrderSelect] = useState<Order | null>(null);
@@ -83,6 +86,13 @@ export default function TablOrderPrint({
             level: 0,
         }));
 
+        const attriuteMKP :Attribute [] = skuMPK.map(item => ({
+            name : item.sku,
+            printOrigin: "MKP",
+            key: item.sku,
+            level: 0
+        }))
+
         return {
             MP: {
                 attribute: attributeMenPrint,
@@ -94,8 +104,13 @@ export default function TablOrderPrint({
                 orderOrigin: variationsPrinteesHub,
                 code: "PRH",
             },
+            MKP: {
+                attribute: attriuteMKP,
+                orderOrigin: skuMPK,
+                code: "MKP",
+            },
         };
-    }, [variationsPrinteesHub, productMenPrint]);
+    }, [variationsPrinteesHub, productMenPrint, skuMPK]);
 
     const optionPrint: Option[] = useMemo(() => {
         return printers.map((item) => ({
@@ -215,7 +230,7 @@ export default function TablOrderPrint({
         <div>
             {isModalOpen && (
                 <OrderItemModalView
-                   changStausOrderPrint={changStausOrderPrint}
+                    changStausOrderPrint={changStausOrderPrint}
                     order={orderSelect}
                     onClose={() => setIsModalOpen(false)}
                     attribute={attribute}

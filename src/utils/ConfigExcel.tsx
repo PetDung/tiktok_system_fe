@@ -1,6 +1,5 @@
 import { ExcelColumnConfig } from "@/components/UI/ExcelExportButton";
 import { AuditFailedReason, getCategoryPathText, Product, ProductReport } from "@/service/types/ApiResponse";
-import { get } from "lodash";
 
 
 export const columnsProductActive: ExcelColumnConfig<Product>[] = [
@@ -54,7 +53,7 @@ export const columnsProductRecord: ExcelColumnConfig<Product>[] = [
 export const columnsProductSale: ExcelColumnConfig<ProductReport>[] = [
   { header: "ID", key: "productId" },
   { header: "Title", key: "productName" },
-  { header: "Shop", key: "shopName" }, // nested key
+  { header: "Shop", key: "shop.shopName." }, // nested key
   { header: "sold", key: "soldCount" }, // nested key
   { header: "link", 
     key: "productId",

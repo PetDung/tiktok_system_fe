@@ -5,11 +5,13 @@ import TablOrderPrint from "./TablOrderPrint";
 import { CategoryPrintPrinteesHub, ProductMenPrint } from "@/service/print-order/getSKU";
 import LoadingIndicator from "@/components/UI/LoadingIndicator";
 import { PrintShippMethod } from "@/service/types/PrintOrder";
+import { SKUMPK } from "@/service/print-order/data";
 
 type Props = {
     variationsPrinteesHub: CategoryPrintPrinteesHub[];
     productMenPrint: ProductMenPrint[];
     orderReviewList : Order[];
+    skuMPK: SKUMPK[]
     setOrderReviewList: React.Dispatch<React.SetStateAction<Order[]>>;
     isLoading : boolean;
     printers: PrintShop[];
@@ -28,7 +30,8 @@ export default function Printing(
         isLoading, 
         loadMore,
         hasMore,
-        printShippingMethods
+        printShippingMethods,
+        skuMPK
     }: Props) {
     return (
         <div>
@@ -36,6 +39,7 @@ export default function Printing(
                 <LoadingIndicator />
             </div>}
             {!isLoading && <TablOrderPrint
+                skuMPK={skuMPK}
                 printShippingMethods = {printShippingMethods}
                 setOrder = {setOrderReviewList}
                 variationsPrinteesHub={variationsPrinteesHub}

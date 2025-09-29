@@ -76,13 +76,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 shadow-xl border-r border-gray-700
               `}
             >
-              <div className="h-full scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                <Menu 
-                  items={menuData} 
+              <div
+                className="
+                    h-full overflow-auto
+                    scrollbar-thin
+                    scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500
+                    scrollbar-track-transparent
+                    scrollbar-thumb-rounded-full
+                  "
+                >
+                <Menu
+                  items={menuData}
                   collapsed={!isMobile && collapsed}
                   onItemClick={() => isMobile && setSidebarOpen(false)}
                 />
               </div>
+
             </aside>
 
             {/* MAIN CONTENT */}

@@ -7,13 +7,14 @@ import Printing from "./_components/Printing";
 import { ApiResponse, Order, PrintShop } from "@/service/types/ApiResponse";
 import { useWebSocket } from "@/Context/WebSocketContext";
 import { IMessage } from "@stomp/stompjs";
-import { CategoryPrintPrinteesHub, getVariationsMenPrint, getVariationsPrinteesHub, MenPrintData, ProductMenPrint } from "@/service/print-order/getSKU";
+import { CategoryPrintPrinteesHub, fetchSkuMKP, getVariationsMenPrint, getVariationsPrinteesHub, MenPrintData, ProductMenPrint } from "@/service/print-order/getSKU";
 import { usePrinters } from "@/lib/customHooks/usePrinters";
 import { useFetch } from "@/lib/useFetch";
 import { getOrderCantPrint, getPrintShippingMethod } from "@/service/print-order/print-order-service";
 import { Message } from "@/service/types/websocketMessageType";
 import { PrintShippMethod } from "@/service/types/PrintOrder";
 import PrintSucc from "./_components/PrintSuccess";
+import { SKUMPK } from "@/service/print-order/data";
 
 const tabs = [
   { id: "Review", label: "Cần xét duyệt", icon: <Eye /> },
@@ -56,6 +57,12 @@ export default function PrintOrderPage() {
     fetcher: getVariationsPrinteesHub,
     key: "variations-printeesHub"
   });
+
+  const { data: SkuMPKRespoonse } = useFetch<SKUMPK[]>({
+    fetcher: fetchSkuMKP,
+    key: "variations-mpk"
+  });
+
   const { data: productMenPrintResponse } = useFetch<MenPrintData<ProductMenPrint>>({
     fetcher: getVariationsMenPrint,
     key: "variations-menPrint"
@@ -66,7 +73,9 @@ export default function PrintOrderPage() {
     key: "print-shipping-method"
   });
 
+
   const printers: PrintShop[] = printersResponse?.result ?? [];
+  const skumpk: SKUMPK[] = SkuMPKRespoonse || [];
   const variationsPrinteesHub: CategoryPrintPrinteesHub[] = variationsPrinteesHubResponse ?? [];
   const productMenPrint: ProductMenPrint[] = productMenPrintResponse?.data ?? [];
   const printShippingMethods: PrintShippMethod[] = printShippingMethod?.result ?? [];
@@ -324,6 +333,7 @@ export default function PrintOrderPage() {
       <div className="transition-all duration-200 ease-in-out flex-1 overflow-y-auto">
         {activeTab === "Review" && (
           <ReviewPrint
+            skuMPK={skumpk}
             printShippingMethods = {printShippingMethods}
             hasMore={hasMoreReview}
             loadMore={loadMoreRevew}
@@ -337,6 +347,7 @@ export default function PrintOrderPage() {
         )}
         {activeTab === "AwaitDesign" && (
           <AwaitDesign
+            skuMPK={skumpk}
             printShippingMethods = {printShippingMethods}
             hasMore={hasMoreAwait}
             loadMore={loadMoreAwait}
@@ -350,6 +361,7 @@ export default function PrintOrderPage() {
         )}
         {activeTab === "Printing" && 
           <Printing
+              skuMPK={skumpk}
               printShippingMethods = {printShippingMethods}
               hasMore={hasMorePrinting}
               loadMore={loadMorePringting}
