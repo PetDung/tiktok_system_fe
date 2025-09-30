@@ -96,7 +96,7 @@ export default function OrderItemCard({
                 )
             );
         }
-         if (attribute.code === "MKP") {
+        if (attribute.code === "MKP") {
             const orderOrigin = attribute.orderOrigin as SKUMPK[];
             const matched = orderOrigin.find((o) => o.name === optionSelect.type);
             if (!matched) return [];
@@ -140,7 +140,7 @@ export default function OrderItemCard({
             );
             return matchedVariation ? matchedVariation.sku : null;
         }
-         if (attribute.code === "MKP") {
+        if (attribute.code === "MKP") {
             const orderOrigin = attribute.orderOrigin as SKUMPK[];
             const matchedCategory = orderOrigin.find(
                 (cat) => cat.sku === optionSelect.type
@@ -206,8 +206,12 @@ export default function OrderItemCard({
         id: string;
         openAddDesign: (lineItem: any) => void;
     }) {
-        const imageUrls = [design.front, design.back, design.leftUrl, design.rightUrl]
-            .filter((url): url is string => !!url);
+        const imageUrls = [
+            { url: design.front, label: "Front" },
+            { url: design.back, label: "Back" },
+            { url: design.leftUrl, label: "Left" },
+            { url: design.rightUrl, label: "Right" },
+        ].filter((item): item is { url: string; label: string } => !!item.url);
 
         if (imageUrls.length === 0) {
             return (
@@ -219,13 +223,15 @@ export default function OrderItemCard({
                 </div>
             );
         }
-        console.log(imageUrls, design)
 
         return (
             <div className="relative flex gap-2">
                 {/* Nhóm ảnh */}
-                {imageUrls.map((url, index) => (
-                    <ThumbPreview key={index} size={60} thumbUrl={url} />
+                {imageUrls.map((item, index) => (
+                    <div key={index} className="flex flex-col items-center">
+                        <ThumbPreview size={60} thumbUrl={item.url} />
+                        <span className="text-xs text-gray-500 mt-1">{item.label}</span>
+                    </div>
                 ))}
 
                 {/* Nút X bao toàn bộ */}
@@ -241,6 +247,7 @@ export default function OrderItemCard({
             </div>
         );
     }
+
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2 mb-2">
