@@ -264,6 +264,10 @@ export interface Design {
   backSide?: string;
   leftSide?: string;
   rightSide?: string;
+  front:string | null;
+  back : string | null;
+  leftUrl : string | null;
+  rightUrl : string  | null;
   thumbnail?: string;
   createdAt : Date;
 }

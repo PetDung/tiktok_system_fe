@@ -40,7 +40,7 @@ export default function OrderItemModalView({
     });
 
     return Object.values(lineItemsWithQuantityMap).sort(
-      (a, b) => b.quantity - a.quantity // nhiều -> ít
+      (a, b) => a.lineItem.product_name.localeCompare(b.lineItem.product_name) // A -> Z
     );
   }, [order]);
 
@@ -80,7 +80,6 @@ export default function OrderItemModalView({
             <OrderItemCard
               openAddDesign={openModalDesignAdd}
               attribute={attribute}
-              disabledSelect = {order?.print_status ==="PRINTED"}
               key={item.lineItem.id}
               item={item}
             />

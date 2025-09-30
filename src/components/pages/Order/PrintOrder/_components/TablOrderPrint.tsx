@@ -303,7 +303,6 @@ export default function TablOrderPrint({
                                             value={order?.printer?.id ?? null}
                                             options={optionPrint}
                                             placeholder="Nhà in"
-                                            disabled = {order.print_status ==="PRINTED"}
                                             size={150}
                                             onChange={(value) => updatePrinter(order.id, value)}
                                         />
@@ -311,7 +310,7 @@ export default function TablOrderPrint({
                                             value={order?.print_shipping_method?? null}
                                             options={optionPrintShippingMethod[order?.printer?.id ?? ""] || []}
                                             placeholder="Ship"
-                                            disabled = {order.print_status ==="PRINTED" || !optionPrintShippingMethod[order?.printer?.id ?? ""]}
+                                            disabled = {!optionPrintShippingMethod[order?.printer?.id ?? ""]}
                                             size={150}
                                             onChange={(value) => handlUpdatePrintShippingMethod(order.id, value)}
                                         />

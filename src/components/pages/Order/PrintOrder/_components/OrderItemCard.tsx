@@ -5,11 +5,12 @@ import { AttributeFull } from "./TablOrderPrint";
 import { useEffect, useMemo, useState } from "react";
 import { CategoryPrintPrinteesHub, getSkuMenPrint, MenPrintSku, Variation } from "@/service/print-order/getSKU";
 import { updatePrinterSku } from "@/service/order/order-service";
-import { LineItem } from "@/service/types/ApiResponse";
+import { Design, LineItem } from "@/service/types/ApiResponse";
 import { X } from "lucide-react";
 import { clearDesignInItem } from "@/service/design/design-service";
 import { PrintSkuRequest } from "@/service/types/PrintOrder";
 import { useFetch } from "@/lib/useFetch";
+import { SKUMPK, ValueMKP } from "@/service/print-order/data";
 
 export type OptionSelect = {
     type: string;
@@ -36,15 +37,15 @@ export default function OrderItemCard({
     const { data: skuMenPrintRs, isLoading: loadingColors } = useFetch<MenPrintSku[]>({
         fetcher: getSkuMenPrint,
         key: "men-print-sku",
-        param : optionSelect.type
+        param: optionSelect.type
     });
 
-    const  skuMenPrint = skuMenPrintRs ? skuMenPrintRs : [] ;
+    const skuMenPrint = skuMenPrintRs ? skuMenPrintRs : [];
 
     /** Lấy danh sách màu dựa vào type đã chọn */
     const colors: string[] = useMemo(() => {
         if (!attribute || !optionSelect.type) return [];
-         console.log(item.lineItem.id)
+        console.log(item.lineItem.id)
         if (attribute.code === "PRH") {
             const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
             const matched = orderOrigin.find((o) => o.name === optionSelect.type);
@@ -53,6 +54,13 @@ export default function OrderItemCard({
         }
         if (attribute.code === "MP") {
             return Array.from(new Set(skuMenPrint.map(item => item.color)));
+
+        }
+        if (attribute.code === "MKP") {
+            const orderOrigin = attribute.orderOrigin as SKUMPK[];
+            const matched = orderOrigin.find((o) => o.sku === optionSelect.type);
+            if (!matched) return [];
+            return Array.from(new Set(matched.varriants.map(item => item.color)));
 
         }
         return []
@@ -88,6 +96,20 @@ export default function OrderItemCard({
                 )
             );
         }
+         if (attribute.code === "MKP") {
+            const orderOrigin = attribute.orderOrigin as SKUMPK[];
+            const matched = orderOrigin.find((o) => o.name === optionSelect.type);
+            if (!matched) return [];
+            return Array.from(
+                new Set(
+                    matched.varriants
+                        .filter((v: ValueMKP) => v.color === optionSelect.color)
+                        .map((v: ValueMKP) => v.size)
+                )
+            );
+
+        }
+
         return [];
     }, [attribute, optionSelect.type, optionSelect.color, skuMenPrint]);
 
@@ -118,18 +140,26 @@ export default function OrderItemCard({
             );
             return matchedVariation ? matchedVariation.sku : null;
         }
+         if (attribute.code === "MKP") {
+            const orderOrigin = attribute.orderOrigin as SKUMPK[];
+            const matchedCategory = orderOrigin.find(
+                (cat) => cat.sku === optionSelect.type
+            );
+            if (!matchedCategory) return null;
+            return matchedCategory.sku;
+        }
         return null;
     }, [attribute, optionSelect]);
 
     const skuOption = useMemo(() => {
         const lineItem = item.lineItem;
 
-        if(!lineItem.print_sku) return "Chưa có"
+        if (!lineItem.print_sku) return "Chưa có"
 
         return `${lineItem.print_sku.type} 
                 -${lineItem.print_sku.value1}
                 -${lineItem.print_sku.value2}
-                ` 
+                `
     }, [item])
 
 
@@ -138,8 +168,8 @@ export default function OrderItemCard({
 
         const printSku: PrintSkuRequest = {
             skuCode: sku,
-            value1 : optionSelect.color,
-            value2 : optionSelect.size,
+            value1: optionSelect.color,
+            value2: optionSelect.size,
             type: optionSelect.type
         }
 
@@ -163,6 +193,55 @@ export default function OrderItemCard({
         }
     }
 
+    function DesignPreview({
+        design,
+        disabledSelect,
+        clear,
+        id,
+        openAddDesign,
+    }: {
+        design: Design;
+        disabledSelect?: boolean;
+        clear: (id: string) => void;
+        id: string;
+        openAddDesign: (lineItem: any) => void;
+    }) {
+        const imageUrls = [design.front, design.back, design.leftUrl, design.rightUrl]
+            .filter((url): url is string => !!url);
+
+        if (imageUrls.length === 0) {
+            return (
+                <div
+                    onClick={() => openAddDesign({ id, design })}
+                    className="w-15 h-15 flex items-center justify-center border border-gray-300 rounded cursor-pointer"
+                >
+                    <span className="text-2xl text-gray-400">+</span>
+                </div>
+            );
+        }
+        console.log(imageUrls, design)
+
+        return (
+            <div className="relative flex gap-2">
+                {/* Nhóm ảnh */}
+                {imageUrls.map((url, index) => (
+                    <ThumbPreview key={index} size={60} thumbUrl={url} />
+                ))}
+
+                {/* Nút X bao toàn bộ */}
+                {!disabledSelect && (
+                    <button
+                        type="button"
+                        onClick={() => clear(id)}
+                        className="absolute -top-2 -right-2 bg-white rounded-full w-5 h-5 flex items-center justify-center text-red-500 shadow-md hover:bg-gray-100"
+                    >
+                        <X size={20} />
+                    </button>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2 mb-2">
             <div className="flex gap-4 items-start">
@@ -176,105 +255,101 @@ export default function OrderItemCard({
                     <p className="text-xs text-gray-600 mb-1">Loại: {item.lineItem.sku_name}</p>
                     <p className="text-sm text-gray-600">Số lượng: {item.quantity}</p>
                     <p className="text-sm text-gray-600">
-                        Sku code: {item.lineItem.print_sku?.skuCode?? "Chưa có" }
+                        Sku code: {item.lineItem.print_sku?.skuCode ?? "Chưa có"}
                     </p>
                     <p className="text-sm text-gray-600">
                         Sku: {skuOption}
                     </p>
                 </div>
-                <div className="flex-shrink-0">
-                    {item.lineItem.design?.thumbnail ? (
-                        <div className="relative">
-                            <ThumbPreview size={60} thumbUrl={item.lineItem.design.thumbnail} />
-                            {!disabledSelect && (
-                                <button 
-                                    type="button"
-                                    onClick={() => clear(item.lineItem.id)}
-                                    className="absolute top-0 right-0 bg-white rounded-full w-5 h-5 flex items-center justify-center text-red-500 shadow-md hover:bg-gray-100"
-                                >
-                                    <X />
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <div
-                            onClick={() => openAddDesign(item.lineItem)}
-                            className="w-15 h-15 flex items-center justify-center border border-gray-300 rounded cursor-pointer">
-                            <span className="text-2xl text-gray-400">+</span>
-                        </div>
-                    )}
-                </div>
+
             </div>
-
-           {
-            !disabledSelect &&  <div className="flex justify-center gap-3 pt-2 border-t border-gray-100">
-                {attribute ? (
-                    <>
-                        {/* Type */}
-                        <div>
-                            <input
-                                list="type-options"
-                                value={optionSelect.type}
-                                onChange={(e) =>
-                                    setOptionSelect({ type: e.target.value, color: "", size: "" })
-                                }
-                                disabled={disabledSelect}
-                                className="px-3 min-w-[120px] max-w-[200px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="-- Type --"
-                            />
-                            <datalist id="type-options">
-                                {attribute.attribute.map((t) => (
-                                    <option key={t.key} value={t.key}>
-                                        {t.name}
-                                    </option>
-                                ))}
-                            </datalist>
-                        </div>
-
-                        {/* Color */}
-                        <div>
-                            <input
-                                list="color-options"
-                                value={optionSelect.color}
-                                onChange={(e) =>
-                                    setOptionSelect({ ...optionSelect, color: e.target.value, size: "" })
-                                }
-                                disabled={!optionSelect.type || disabledSelect}
-                                className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder={loadingColors ? "Đang tải..." : "-- Color --"}
-                            />
-                            <datalist id="color-options">
-                                {colors.map((c) => (
-                                    <option key={c} value={c} />
-                                ))}
-                            </datalist>
-                        </div>
-
-                        {/* Size */}
-                        <div>
-                            <input
-                                list="size-options"
-                                value={optionSelect.size}
-                                onChange={(e) =>
-                                    setOptionSelect({ ...optionSelect, size: e.target.value })
-                                }
-                                disabled={!optionSelect.color  || disabledSelect}
-                                className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="-- Size --"
-                            />
-                            <datalist id="size-options">
-                                {sizes.map((s) => (
-                                    <option key={s} value={s} />
-                                ))}
-                            </datalist>
-                        </div>
-                    </>
+            <div className="flex-shrink-0">
+                {item.lineItem.design ? (
+                    <DesignPreview
+                        design={item.lineItem.design}
+                        disabledSelect={disabledSelect}
+                        clear={clear}
+                        id={item.lineItem.id}
+                        openAddDesign={openAddDesign}
+                    />
                 ) : (
-                    <p className="text-sm text-gray-500 italic">Vui lòng chọn nhà in trước</p>
+                    <div
+                        onClick={() => openAddDesign(item.lineItem)}
+                        className="w-15 h-15 flex items-center justify-center border border-gray-300 rounded cursor-pointer"
+                    >
+                        <span className="text-2xl text-gray-400">+</span>
+                    </div>
                 )}
             </div>
+            {
+                !disabledSelect && <div className="flex justify-center gap-3 pt-2 border-t border-gray-100">
+                    {attribute ? (
+                        <>
+                            {/* Type */}
+                            <div>
+                                <input
+                                    list="type-options"
+                                    value={optionSelect.type}
+                                    onChange={(e) =>
+                                        setOptionSelect({ type: e.target.value, color: "", size: "" })
+                                    }
+                                    disabled={disabledSelect}
+                                    className="px-3 min-w-[120px] max-w-[200px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="-- Type --"
+                                />
+                                <datalist id="type-options">
+                                    {attribute.attribute.map((t) => (
+                                        <option key={t.key} value={t.key}>
+                                            {t.name}
+                                        </option>
+                                    ))}
+                                </datalist>
+                            </div>
 
-           }
+                            {/* Color */}
+                            <div>
+                                <input
+                                    list="color-options"
+                                    value={optionSelect.color}
+                                    onChange={(e) =>
+                                        setOptionSelect({ ...optionSelect, color: e.target.value, size: "" })
+                                    }
+                                    disabled={!optionSelect.type || disabledSelect}
+                                    className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder={loadingColors ? "Đang tải..." : "-- Color --"}
+                                />
+                                <datalist id="color-options">
+                                    {colors.map((c) => (
+                                        <option key={c} value={c} />
+                                    ))}
+                                </datalist>
+                            </div>
+
+                            {/* Size */}
+                            <div>
+                                <input
+                                    list="size-options"
+                                    value={optionSelect.size}
+                                    onChange={(e) =>
+                                        setOptionSelect({ ...optionSelect, size: e.target.value })
+                                    }
+                                    disabled={!optionSelect.color || disabledSelect}
+                                    className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="-- Size --"
+                                />
+                                <datalist id="size-options">
+                                    {sizes.map((s) => (
+                                        <option key={s} value={s} />
+                                    ))}
+                                </datalist>
+                            </div>
+                        </>
+                    ) : (
+                        <p className="text-sm text-gray-500 italic">Vui lòng chọn nhà in trước</p>
+                    )}
+                </div>
+
+            }
 
         </div>
     );
