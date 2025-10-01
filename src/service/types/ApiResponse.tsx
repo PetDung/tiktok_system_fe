@@ -145,6 +145,7 @@ export interface Order {
   status: string;
   shipping_type: string;
   create_time: number;
+  update_time : number;
   line_items: LineItem[];
   is_note : boolean | null;
   cost: number

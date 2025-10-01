@@ -272,6 +272,7 @@ export default function OrderTable(
                       Tracking: {order.tracking_number || <span className="text-red-500 font-medium">Chưa có</span>}
                     </div>
                     <div className="text-gray-400 text-xs mt-1">{formatDate(order.create_time)}</div>
+                    <div className="text-gray-400 text-xs mt-1">{formatDate(order.update_time)}</div>
                   </td>
                   <td 
                     className="px-1 py-1 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer" 
