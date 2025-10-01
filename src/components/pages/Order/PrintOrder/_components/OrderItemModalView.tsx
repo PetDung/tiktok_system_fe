@@ -14,8 +14,11 @@ type ModalProps = {
 };
 
 export type LineItemHasQuantity = {
-  lineItem: LineItem;
+  lineItems: LineItem[];
   quantity: number;
+  productName: string;
+  skuId : string;
+  lineItemFist : LineItem;
 };
 
 export default function OrderItemModalView({
@@ -25,7 +28,7 @@ export default function OrderItemModalView({
   changStausOrderPrint,
 }: ModalProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectItem, setSelectItem] = useState<LineItem | null>(null);
+  const [selectItem, setSelectItem] = useState<LineItemHasQuantity | null>(null);
 
   const lineItemsWithQuantity: LineItemHasQuantity[] = useMemo(() => {
     if (!order) return [];
@@ -34,28 +37,37 @@ export default function OrderItemModalView({
     order.line_items.forEach((item) => {
       if (lineItemsWithQuantityMap[item.sku_id]) {
         lineItemsWithQuantityMap[item.sku_id].quantity += 1;
+        lineItemsWithQuantityMap[item.sku_id].lineItems.push(item);
       } else {
-        lineItemsWithQuantityMap[item.sku_id] = { lineItem: item, quantity: 1 };
+        lineItemsWithQuantityMap[item.sku_id] = {
+           lineItems: [item], 
+           quantity: 1 , 
+           productName: item.product_name,
+           skuId : item.sku_id,
+           lineItemFist : item
+        };
       }
     });
 
     return Object.values(lineItemsWithQuantityMap).sort(
-      (a, b) => a.lineItem.product_name.localeCompare(b.lineItem.product_name) // A -> Z
+      (a, b) => a.productName.localeCompare(b.productName) // A -> Z
     );
   }, [order]);
 
-  useEffect(() => {
-    if (order && selectItem) {
-      const updated = order.line_items.find((li) => li.id === selectItem.id);
-      if (updated) setSelectItem(updated);
-    }
-  }, [order]);
+  // useEffect(() => {
+  //   if (order && selectItem) {
+  //     const updated = order.line_items.find((li) => li.id === selectItem);
+  //     if (updated) setSelectItem(updated);
+  //   }
+  // }, [order]);
 
   const openModalDesignAdd = (item: LineItem) => {
     setIsModalOpen(true);
-    setSelectItem(item);
+    const selectedGroup = lineItemsWithQuantity.find(
+      (group) => group.skuId === item.sku_id
+    )!;
+    setSelectItem(selectedGroup);
   };
-
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -80,7 +92,7 @@ export default function OrderItemModalView({
             <OrderItemCard
               openAddDesign={openModalDesignAdd}
               attribute={attribute}
-              key={item.lineItem.id}
+              key={item.skuId}
               item={item}
             />
           ))}
@@ -102,7 +114,7 @@ export default function OrderItemModalView({
         </div>
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && selectItem && (
         <ModalDesignAdd item={selectItem} onClose={() => setIsModalOpen(false)} />
       )}
     </div>

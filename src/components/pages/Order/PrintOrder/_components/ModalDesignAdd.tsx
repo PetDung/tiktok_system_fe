@@ -3,17 +3,18 @@ import { getAllDesigns, mappingDesign, ParamMapping } from "@/service/design/des
 import { Design, LineItem } from "@/service/types/ApiResponse";
 import { X, Image, Package, Search, Grid, List, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LineItemHasQuantity } from "./OrderItemModalView";
 
 type ModalProps = {
     onClose: () => void;
-    item: LineItem | null;
+    item: LineItemHasQuantity;
 };
 
 export default function ModalDesignAdd({ onClose, item }: ModalProps) {
     const [designs, setDesigns] = useState<Design[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedDesign, setSelectedDesign] = useState<Design | null>(item?.design || null);
+    const [selectedDesign, setSelectedDesign] = useState<Design | null>(item.lineItemFist.design || null);
     useEffect(() => {
         (async () => {
             setLoading(true);
@@ -42,11 +43,11 @@ export default function ModalDesignAdd({ onClose, item }: ModalProps) {
     };
 
     const handleSubmit = async () => {
-        if (!item?.product_id?.trim()) {
+        if (!item?.lineItemFist.product_id?.trim()) {
             alert("Vui lòng nhập Product ID");
             return;
         }
-        if (!item?.sku_id) {
+        if (!item?.lineItemFist.sku_id) {
             alert("Vui lòng chọn ít nhất 1 SKU");
             return;
         }
@@ -56,8 +57,8 @@ export default function ModalDesignAdd({ onClose, item }: ModalProps) {
         }
 
         const payload: ParamMapping = {
-            productId: item?.product_id,
-            skuIds: [item?.sku_id],
+            productId: item.lineItemFist.product_id,
+            skuIds: [item.lineItemFist.sku_id],
             designId: selectedDesign.id,
         };
 
@@ -97,7 +98,7 @@ export default function ModalDesignAdd({ onClose, item }: ModalProps) {
                                 <div>
                                     <h2 className="text-xl font-bold text-gray-900">Chọn Design</h2>
                                     {item && (
-                                        <p className="text-sm text-gray-600">cho sản phẩm: {item.product_name}</p>
+                                        <p className="text-sm text-gray-600">cho sản phẩm: {item.productName}</p>
                                     )}
                                 </div>
                             </div>

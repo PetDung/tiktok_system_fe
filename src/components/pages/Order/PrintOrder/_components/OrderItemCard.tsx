@@ -4,13 +4,14 @@ import { LineItemHasQuantity } from "./OrderItemModalView";
 import { AttributeFull } from "./TablOrderPrint";
 import { useEffect, useMemo, useState } from "react";
 import { CategoryPrintPrinteesHub, getSkuMenPrint, MenPrintSku, Variation } from "@/service/print-order/getSKU";
-import { updatePrinterSku } from "@/service/order/order-service";
+import { updateIsPrinter, updatePrinterSku } from "@/service/order/order-service";
 import { Design, LineItem } from "@/service/types/ApiResponse";
-import { X } from "lucide-react";
+import { X, Printer } from "lucide-react";
 import { clearDesignInItem } from "@/service/design/design-service";
 import { PrintSkuRequest } from "@/service/types/PrintOrder";
 import { useFetch } from "@/lib/useFetch";
 import { SKUMPK, ValueMKP } from "@/service/print-order/data";
+import DesignPreview from "./DesignPreview";
 
 export type OptionSelect = {
     type: string;
@@ -34,6 +35,8 @@ export default function OrderItemCard({
         size: "",
         color: "",
     });
+    const [isPrintEnabled, setIsPrintEnabled] = useState<boolean | null>(item.lineItemFist.is_print);
+    
     const { data: skuMenPrintRs, isLoading: loadingColors } = useFetch<MenPrintSku[]>({
         fetcher: getSkuMenPrint,
         key: "men-print-sku",
@@ -45,7 +48,6 @@ export default function OrderItemCard({
     /** Lấy danh sách màu dựa vào type đã chọn */
     const colors: string[] = useMemo(() => {
         if (!attribute || !optionSelect.type) return [];
-        console.log(item.lineItem.id)
         if (attribute.code === "PRH") {
             const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
             const matched = orderOrigin.find((o) => o.name === optionSelect.type);
@@ -152,7 +154,7 @@ export default function OrderItemCard({
     }, [attribute, optionSelect]);
 
     const skuOption = useMemo(() => {
-        const lineItem = item.lineItem;
+        const lineItem = item.lineItemFist;
 
         if (!lineItem.print_sku) return "Chưa có"
 
@@ -175,16 +177,18 @@ export default function OrderItemCard({
 
         const updateSku = async () => {
             try {
-                await updatePrinterSku(item.lineItem.id, printSku)
+                const ids = item.lineItems.map(item => item.id)
+                await updatePrinterSku(ids, printSku)
                 console.log("✅ SKU updated:", sku);
             } catch (err) {
+                console.log(err)
                 alert("❌ Update SKU failed");
             }
         };
         updateSku();
-    }, [sku, item.lineItem.id]);
+    }, [sku]);
 
-    const clear = async (id: string) => {
+    const clear = async (id: string[]) => {
         try {
             await clearDesignInItem(id);
         } catch (e: any) {
@@ -193,76 +197,52 @@ export default function OrderItemCard({
         }
     }
 
-    function DesignPreview({
-        design,
-        disabledSelect,
-        clear,
-        id,
-        openAddDesign,
-    }: {
-        design: Design;
-        disabledSelect?: boolean;
-        clear: (id: string) => void;
-        id: string;
-        openAddDesign: (lineItem: any) => void;
-    }) {
-        const imageUrls = [
-            { url: design.front, label: "Front" },
-            { url: design.back, label: "Back" },
-            { url: design.leftUrl, label: "Left" },
-            { url: design.rightUrl, label: "Right" },
-        ].filter((item): item is { url: string; label: string } => !!item.url);
-
-        if (imageUrls.length === 0) {
-            return (
-                <div
-                    onClick={() => openAddDesign({ id, design })}
-                    className="w-15 h-15 flex items-center justify-center border border-gray-300 rounded cursor-pointer"
-                >
-                    <span className="text-2xl text-gray-400">+</span>
-                </div>
-            );
+    const changeIsPrint = async (isPrint: boolean) => {
+        try {
+            setIsPrintEnabled(isPrint)
+            const ids = item.lineItems.map(item => item.id)
+            await updateIsPrinter(ids, isPrint)
+        } catch (err) {
+            console.log(err)
+            setIsPrintEnabled(!isPrint)
+            alert("❌ Update SKU failed");
         }
-
-        return (
-            <div className="relative flex gap-2">
-                {/* Nhóm ảnh */}
-                {imageUrls.map((item, index) => (
-                    <div key={index} className="flex flex-col items-center">
-                        <ThumbPreview size={60} thumbUrl={item.url} />
-                        <span className="text-xs text-gray-500 mt-1">{item.label}</span>
-                    </div>
-                ))}
-
-                {/* Nút X bao toàn bộ */}
-                {!disabledSelect && (
-                    <button
-                        type="button"
-                        onClick={() => clear(id)}
-                        className="absolute -top-2 -right-2 bg-white rounded-full w-5 h-5 flex items-center justify-center text-red-500 shadow-md hover:bg-gray-100"
-                    >
-                        <X size={20} />
-                    </button>
-                )}
-            </div>
-        );
     }
-
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2 mb-2">
             <div className="flex gap-4 items-start">
                 <div className="flex-shrink-0">
-                    <ThumbPreview size={60} thumbUrl={item.lineItem.sku_image} />
+                    <ThumbPreview size={60} thumbUrl={item.lineItemFist.sku_image} />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-900 mb-1 truncate overflow-hidden whitespace-nowrap">
-                        {item.lineItem.product_name}
-                    </h3>
-                    <p className="text-xs text-gray-600 mb-1">Loại: {item.lineItem.sku_name}</p>
+                    <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-sm font-medium text-gray-900 mb-1 truncate overflow-hidden whitespace-nowrap">
+                            {item.lineItemFist.product_name}
+                        </h3>
+                        
+                        {/* Print Toggle Switch */}
+                        <div className="flex items-center gap-2 ml-2">
+                            <Printer className={`w-4 h-4 ${isPrintEnabled ? 'text-green-600' : 'text-gray-400'}`} />
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isPrintEnabled ?? false}   // nếu null thì thành false
+                                    onChange={(e) => changeIsPrint(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                            <span className="text-xs font-medium text-gray-700">
+                                {isPrintEnabled ? 'Bật' : 'Tắt'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <p className="text-xs text-gray-600 mb-1">Loại: {item.lineItemFist.sku_name}</p>
                     <p className="text-sm text-gray-600">Số lượng: {item.quantity}</p>
                     <p className="text-sm text-gray-600">
-                        Sku code: {item.lineItem.print_sku?.skuCode ?? "Chưa có"}
+                        Sku code: {item.lineItemFist.print_sku?.skuCode ?? "Chưa có"}
                     </p>
                     <p className="text-sm text-gray-600">
                         Sku: {skuOption}
@@ -271,17 +251,18 @@ export default function OrderItemCard({
 
             </div>
             <div className="flex-shrink-0">
-                {item.lineItem.design ? (
+                {item.lineItemFist.design ? (
                     <DesignPreview
-                        design={item.lineItem.design}
+                        design={item.lineItemFist.design}
                         disabledSelect={disabledSelect}
+                        item={item.lineItemFist}
                         clear={clear}
-                        id={item.lineItem.id}
+                        ids={item.lineItems.map(i  => i.id)}
                         openAddDesign={openAddDesign}
                     />
                 ) : (
                     <div
-                        onClick={() => openAddDesign(item.lineItem)}
+                        onClick={() => openAddDesign(item.lineItemFist)}
                         className="w-15 h-15 flex items-center justify-center border border-gray-300 rounded cursor-pointer"
                     >
                         <span className="text-2xl text-gray-400">+</span>
@@ -290,12 +271,12 @@ export default function OrderItemCard({
             </div>
             {
                 !disabledSelect && <div className="flex justify-center gap-3 pt-2 border-t border-gray-100">
-                    {attribute ? (
+                    {attribute && isPrintEnabled ? (
                         <>
                             {/* Type */}
                             <div>
                                 <input
-                                    list="type-options"
+                                    list={`type-options-${item.lineItemFist.id}`}
                                     value={optionSelect.type}
                                     onChange={(e) =>
                                         setOptionSelect({ type: e.target.value, color: "", size: "" })
@@ -304,7 +285,7 @@ export default function OrderItemCard({
                                     className="px-3 min-w-[120px] max-w-[200px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="-- Type --"
                                 />
-                                <datalist id="type-options">
+                                <datalist id={`type-options-${item.lineItemFist.id}`}>
                                     {attribute.attribute.map((t) => (
                                         <option key={t.key} value={t.key}>
                                             {t.name}
@@ -316,7 +297,7 @@ export default function OrderItemCard({
                             {/* Color */}
                             <div>
                                 <input
-                                    list="color-options"
+                                    list={`color-options-${item.lineItemFist.id}`}
                                     value={optionSelect.color}
                                     onChange={(e) =>
                                         setOptionSelect({ ...optionSelect, color: e.target.value, size: "" })
@@ -325,7 +306,7 @@ export default function OrderItemCard({
                                     className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     placeholder={loadingColors ? "Đang tải..." : "-- Color --"}
                                 />
-                                <datalist id="color-options">
+                                <datalist id={`color-options-${item.lineItemFist.id}`}>
                                     {colors.map((c) => (
                                         <option key={c} value={c} />
                                     ))}
@@ -335,7 +316,7 @@ export default function OrderItemCard({
                             {/* Size */}
                             <div>
                                 <input
-                                    list="size-options"
+                                    list={`size-options-${item.lineItemFist.id}`}
                                     value={optionSelect.size}
                                     onChange={(e) =>
                                         setOptionSelect({ ...optionSelect, size: e.target.value })
@@ -344,7 +325,7 @@ export default function OrderItemCard({
                                     className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="-- Size --"
                                 />
-                                <datalist id="size-options">
+                                <datalist id={`size-options-${item.lineItemFist.id}`}>
                                     {sizes.map((s) => (
                                         <option key={s} value={s} />
                                     ))}
@@ -352,7 +333,7 @@ export default function OrderItemCard({
                             </div>
                         </>
                     ) : (
-                        <p className="text-sm text-gray-500 italic">Vui lòng chọn nhà in trước</p>
+                        <p className="text-sm text-gray-500 italic">Vui lòng chọn nhà in trước hoặc bật in cho sản phẩm</p>
                     )}
                 </div>
 

@@ -42,6 +42,7 @@ export default function ExcelExportButton<T>({
             });
             return rowData;
         });
+        console.log(formatted)
 
         const worksheet = XLSX.utils.json_to_sheet(formatted);
         const workbook = XLSX.utils.book_new();

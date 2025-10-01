@@ -167,6 +167,7 @@ export interface LineItem {
   sku_print : string | null;
   design: Design | null;
   print_sku: PrintSkuRequest | null;
+  is_print : boolean | null;
 }
 
 export interface ResponsePage<T> {

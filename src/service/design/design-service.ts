@@ -184,9 +184,13 @@ export async function removeSkusDesign(productId: string, ids: string[]) {
     throw new AuthError(500, "An unexpected error occurred. Please try again.");
   }
 }
-export async function clearDesignInItem(id: string) {
+export async function clearDesignInItem(id: string[]) {
      try {
-        const response = await axiosClient.delete<any>(`/design/clear/${id}`);
+        const response = await axiosClient.delete<any>(`/design/clear`, {
+            params:{
+                item_order_ids: id.join(",")
+            }
+        });
         if (response.data.code === 1000) {
             return response.data;
         }

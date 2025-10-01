@@ -166,18 +166,19 @@ export default function TablOrderPrint({
     const changStausOrderPrint = async (order: Order | null, status: string | null) => {
         if(!order) return;
         if(order.print_status === status) return;
-        if (status === "PRINTED" || status === "PRINT_REQUEST") {
+        if ((status === "PRINTED" || status === "PRINT_REQUEST") 
+            && (order.print_status === "PRINT_CANCEL")) {
             if (!order.printer) {
                 alert("Vui lòng chọn nhà in trước");
                 throw new Error("Vui lòng chọn nhà in trước")
             }
 
-            const missingSku = order.line_items.some(item => !item.print_sku);
+            const missingSku = order.line_items.some(item => (!item.print_sku && item.is_print));
             if (missingSku) {
                 alert("Vui lòng set up dịch vụ in cho tất cả sản phẩm trước!");
                 throw new Error("Vui lòng chọn nhà in trước")
             }
-            const missingDesgin = order.line_items.some(item => !item.design);
+            const missingDesgin = order.line_items.some(item => (!item.print_sku && item.is_print));
             if (missingDesgin) {
                 alert("Vui lòng set up thiết kế!");
                 throw new Error("Vui lòng set up thiết kế!")
