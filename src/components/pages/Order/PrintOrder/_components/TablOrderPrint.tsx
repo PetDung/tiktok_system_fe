@@ -5,7 +5,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import OrderItemModalView from "./OrderItemModalView";
 import { CategoryPrintPrinteesHub, ProductMenPrint } from "@/service/print-order/getSKU";
 import OptionalSelect, { Option } from "@/components/UI/OptionalSelect";
-import { changePrinterStatus, updatePrinterOrder, updatePrintShippMethod } from "@/service/order/order-service";
+import { changePrinterStatus, changePrinterStatusBatch, updatePrinterOrder, updatePrintShippMethod } from "@/service/order/order-service";
 import { PrintShippMethod } from "@/service/types/PrintOrder";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
 import { SKUMPK } from "@/service/print-order/data";
@@ -57,6 +57,7 @@ export default function TablOrderPrint({
     const [orderSelect, setOrderSelect] = useState<Order | null>(null);
     const [attribute, setAttribute] = useState<AttributeFull | null>(null);
     const [loadingOverlay, setLoadingOverLay] = useState<boolean>(false);
+    const [selectedOrders, setSelectedOrders] = useState<OrderWithFlag[]>([]);
 
     useEffect(() => {
         if (orderSelect) {
@@ -86,8 +87,8 @@ export default function TablOrderPrint({
             level: 0,
         }));
 
-        const attriuteMKP :Attribute [] = skuMPK.map(item => ({
-            name : item.sku,
+        const attriuteMKP: Attribute[] = skuMPK.map(item => ({
+            name: item.sku,
             printOrigin: "MKP",
             key: item.sku,
             level: 0
@@ -123,16 +124,16 @@ export default function TablOrderPrint({
         const map: Record<string, Option[]> = {};
 
         printShippingMethods.forEach((method) => {
-        if (!map[method.printCode]) {
-            map[method.printCode] = [];
-        }
-        const option: Option = {
-            value : method.type,
-            label : method.type
-        }
+            if (!map[method.printCode]) {
+                map[method.printCode] = [];
+            }
+            const option: Option = {
+                value: method.type,
+                label: method.type
+            }
             map[method.printCode].push(option);
         });
-    return map;
+        return map;
     }, [printShippingMethods]);
 
     const updatePrinter = async (orderId: string, printerId: string | null) => {
@@ -164,33 +165,10 @@ export default function TablOrderPrint({
     };
 
     const changStausOrderPrint = async (order: Order | null, status: string | null) => {
-        if(!order) return;
-        if(order.print_status === status) return;
-        if ((status === "PRINTED" || status === "PRINT_REQUEST") 
-            && (order.print_status === "PRINT_CANCEL")) {
-            if (!order.printer) {
-                alert("Vui lòng chọn nhà in trước");
-                throw new Error("Vui lòng chọn nhà in trước")
-            }
-
-            const missingSku = order.line_items.some(item => (!item.print_sku && item.is_print));
-            if (missingSku) {
-                alert("Vui lòng set up dịch vụ in cho tất cả sản phẩm trước!");
-                throw new Error("Vui lòng chọn nhà in trước")
-            }
-            const missingDesgin = order.line_items.some(item => (!item.print_sku && item.is_print));
-            if (missingDesgin) {
-                alert("Vui lòng set up thiết kế!");
-                throw new Error("Vui lòng set up thiết kế!")
-            }
-            if(!order.print_shipping_method){
-                 alert("Vui lòng chọn phương thức ship!");
-                throw new Error("Vui lòng chọn phương thức ship!")
-            }
-        }
-        
+        if (!order || !status) return;
         try {
-            if(!status) {
+            validateOrderBeforeChange(order, status);
+            if (!status) {
                 alert("Lỗi khi cập nhật máy in");
                 throw new Error("Lỗi khi cập nhật máy in")
             }
@@ -202,11 +180,35 @@ export default function TablOrderPrint({
             console.error("Update printer error:", e);
             alert(e.message || "Lỗi khi cập nhật máy in");
             throw new Error(e)
-        }finally{
+        } finally {
             setLoadingOverLay(false)
         }
     };
-
+    const handlChangStausOrderPrintBatch = async (status: string) => {
+        if (!selectedOrders || selectedOrders.length === 0) return;
+        const newOrderList = selectedOrders.filter(item => item.print_status !== status);
+        if(newOrderList.length  === 0) {
+            setSelectedOrders([])
+        };
+        try {
+            validateOrdersBeforeChange(newOrderList, status);
+            if (!status) {
+                alert("Lỗi khi cập nhật máy in");
+                throw new Error("Lỗi khi cập nhật máy in")
+            }
+            setLoadingOverLay(true)
+            const orderIds = newOrderList.map(item => item.id);
+            await changePrinterStatusBatch(orderIds, status);
+            removeOrders(orderIds);
+            setSelectedOrders([])
+        } catch (e: any) {
+            console.error("Update printer error:", e);
+            alert(e.message || "Lỗi khi cập nhật máy in");
+            throw new Error(e)
+        } finally {
+            setLoadingOverLay(false)
+        }
+    };
     const updateAOrder = (newOrder: Order) => {
         setOrder((prevOrders) =>
             prevOrders.map((o) => (o.id === newOrder.id ? newOrder : o))
@@ -227,6 +229,52 @@ export default function TablOrderPrint({
         }, 300);
     };
 
+    const removeOrders = (orderIds: string[]) => {
+        // Gắn flag _isRemoving cho tất cả order cần xoá
+        setOrder((prevOrders: any) =>
+            prevOrders.map((o: any) =>
+                orderIds.includes(o.id) ? { ...o, _isRemoving: true } : o
+            )
+        );
+
+        // Xoá thật sau khi animate xong
+        setTimeout(() => {
+            setOrder((prevOrders: any) =>
+                prevOrders.filter((o: any) => !orderIds.includes(o.id))
+            );
+        }, 300);
+    };
+    const validateOrderBeforeChange = (order: Order, status: string) => {    
+
+        if (order.print_status === status) {
+            throw new Error(`Đơn ${order.id}: Đang ở trạng thía này rồi!`);
+        }
+        if (status === "PRINT_REQUEST") {
+
+            if (!order.printer) {
+                throw new Error(`Đơn ${order.id}: Vui lòng chọn nhà in trước`);
+            }
+
+            const missingSku = order.line_items.some(item => (!item.print_sku && item.is_print));
+            if (missingSku) {
+                throw new Error(`Đơn ${order.id}: Vui lòng set up dịch vụ in cho tất cả sản phẩm trước!`);
+            }
+
+            const missingDesign = order.line_items.some(item => (!item.design && item.is_print));
+            if (missingDesign) {
+                throw new Error(`Đơn ${order.id}: Vui lòng set up thiết kế!`);
+            }
+
+            if (!order.print_shipping_method) {
+                throw new Error(`Đơn ${order.id}: Vui lòng chọn phương thức ship!`);
+            }
+        }
+    };
+    const validateOrdersBeforeChange = (orders: Order[], status: string) => {
+        orders.forEach(order => {
+            validateOrderBeforeChange(order, status);
+        });
+    };
     return (
         <div>
             {isModalOpen && (
@@ -237,9 +285,26 @@ export default function TablOrderPrint({
                     attribute={attribute}
                 />
             )}
+            {selectedOrders.length > 0 && (
+                <div className="mb-2 flex items-center justify-between bg-blue-100 p-2 rounded sticky top-0 z-50">
+                    <span className="text-sm font-medium text-gray-700">
+                        Đã chọn {selectedOrders.length} đơn
+                    </span>
+                    <OptionalSelect
+                        value={null}
+                        options={optionsChangeStatus}
+                        placeholder="Nhà in"
+                        size={150}
+                        onChange={(value) =>handlChangStausOrderPrintBatch(value || "")}
+                    />
+                </div>
+            )}
 
             <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-300 sticky top-0 z-10 shadow-sm text-xs">
+                <thead
+                    className={`bg-gray-300 sticky z-10 shadow-sm text-xs ${selectedOrders.length > 0 ? "top-[48px]" : "top-0"
+                        }`}
+                >
                     <tr>
                         <th className="px-1 py-1 text-left font-semibold text-gray-700">STT</th>
                         <th className="px-1 py-1 text-left font-semibold text-gray-700">Order ID</th>
@@ -253,16 +318,35 @@ export default function TablOrderPrint({
                 <tbody className="bg-white divide-y divide-gray-200">
                     {orderList.map((order, idx) => (
                         <Fragment key={order.id}>
-                          <tr
-                            className={`
+                            <tr
+                                className={`
                                 transition-all duration-700 ease-linear
-                                ${order._isRemoving 
-                                ? "opacity-0 -translate-x-200"   // trượt sang trái + mờ dần
-                                : "opacity-100"}
-                                hover:bg-blue-50 cursor-pointer
+                                ${order._isRemoving ? "opacity-0 -translate-x-200" : "opacity-100"}
+                                ${selectedOrders.includes(order) ? "bg-blue-100" : "hover:bg-blue-50"}
+                                cursor-pointer
                             `}
-                            >   
-                                <td className="px-1 py-1 text-xs">{idx + 1}</td>
+                            >
+                                <td className="px-2 py-2 text-xs">
+                                    <label className="flex w-full h-full items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            className="h-6 w-6 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
+                                            checked={selectedOrders.includes(order)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedOrders((prev) => [...prev, order]);
+                                                } else {
+                                                    setSelectedOrders((prev) =>
+                                                        prev.filter((item) => item.id !== order.id)
+                                                    );
+                                                }
+                                            }}
+                                        />
+                                        <span className="font-medium">{idx + 1}</span>
+                                    </label>
+                                </td>
+
+
                                 <td className="px-1 py-1 text-xs">
                                     <div className="text-gray-800 font-bold mb-1">{order.shop_name}</div>
                                     <div className="text-gray-600 text-sm font-medium">ID: {order.id}</div>
@@ -299,8 +383,8 @@ export default function TablOrderPrint({
                                 </td>
 
                                 <td className="px-1 py-1">
-                                     <div className="flex flex-col gap-2">
-                                         <OptionalSelect
+                                    <div className="flex flex-col gap-2">
+                                        <OptionalSelect
                                             value={order?.printer?.id ?? null}
                                             options={optionPrint}
                                             placeholder="Nhà in"
@@ -308,14 +392,14 @@ export default function TablOrderPrint({
                                             onChange={(value) => updatePrinter(order.id, value)}
                                         />
                                         <OptionalSelect
-                                            value={order?.print_shipping_method?? null}
+                                            value={order?.print_shipping_method ?? null}
                                             options={optionPrintShippingMethod[order?.printer?.id ?? ""] || []}
                                             placeholder="Ship"
-                                            disabled = {!optionPrintShippingMethod[order?.printer?.id ?? ""]}
+                                            disabled={!optionPrintShippingMethod[order?.printer?.id ?? ""]}
                                             size={150}
                                             onChange={(value) => handlUpdatePrintShippingMethod(order.id, value)}
                                         />
-                                     </div>
+                                    </div>
                                 </td>
                                 <td className="px-1 py-1">
                                     <span
@@ -359,11 +443,11 @@ export default function TablOrderPrint({
 
                                 <td className="px-1 py-1">
                                     <OptionalSelect
-                                        value={order?.print_status?? null}
+                                        value={order?.print_status ?? null}
                                         options={optionsChangeStatus}
                                         placeholder="Trạng thái"
                                         size={150}
-                                        allowClear = {false}
+                                        allowClear={false}
                                         onChange={(value) => changStausOrderPrint(order, value)}
                                     />
                                 </td>
@@ -373,7 +457,7 @@ export default function TablOrderPrint({
                     ))}
                 </tbody>
             </table>
-             <LoadingOverlay show= {loadingOverlay}/>
+            <LoadingOverlay show={loadingOverlay} />
         </div>
     );
 }

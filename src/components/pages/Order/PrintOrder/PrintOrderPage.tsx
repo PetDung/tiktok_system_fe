@@ -1,5 +1,5 @@
 "use client"
-import { Eye, History, PrinterCheck, SquareCheckBig } from "lucide-react";
+import { Eye, History, Loader, PrinterCheck, SquareCheckBig } from "lucide-react";
 import { useEffect, useState } from "react";
 import ReviewPrint from "./_components/ReviewPrint";
 import AwaitDesign from "./_components/AwaitDesign";
@@ -20,6 +20,7 @@ const tabs = [
   { id: "Review", label: "Cần xét duyệt", icon: <Eye /> },
   { id: "AwaitDesign", label: "Chờ thiết kế", icon: <History /> },
   { id: "Printing", label: "Sẵn sàng in", icon: <PrinterCheck /> },
+  { id: "PrintRequest", label: "Đang yêu cầu in", icon: <Loader /> }, // 👈 thêm mới
   { id: "OrderPrint", label: "Đã đặt in", icon: <SquareCheckBig /> },
 ];
 
@@ -35,6 +36,7 @@ export default function PrintOrderPage() {
   const [isLoadingReview, setIsLoadingReview] = useState<boolean>(false);
   const [pageReview, setPageReview] = useState<number>(0);
   const [hasMoreReview, setHasMoreReview] = useState<boolean>(true);
+  const [orderPrintRequestList, setOrderPrintRequestList] = useState<Order[]>([]);
 
   const [isLoadingAwait, setIsLoadingAwait] = useState<boolean>(false);
   const [pageAwait, setPageAwait] = useState<number>(0);
@@ -47,8 +49,10 @@ export default function PrintOrderPage() {
   const [isLoadingPrintSuccess, setIsLoadingSuccess] = useState<boolean>(false);
   const [pageSuccess, setPageSuccess] = useState<number>(0);
   const [hasMoreSuccess, setHasMoreSuccess] = useState<boolean>(true);
-  
-  
+
+  const [isLoadingPrintRequest, setIsLoadingPrintRequest] = useState<boolean>(false);
+  const [pagePrintRequest, setPagePrintRequest] = useState<number>(0);
+  const [hasMorePrintRequest, setHasMorePrintRequest] = useState<boolean>(true);
 
   const wsClient = useWebSocket();
 
@@ -87,11 +91,13 @@ export default function PrintOrderPage() {
         setIsLoadingAwait(true);
         setIsLoadingPrinting(true);
         setIsLoadingSuccess(true)
+        setIsLoadingPrintRequest(true)
         await Promise.all([
           loadOrderReview(), 
           loadOrderAwait(), 
           loadOrderPringting(), 
-          loadOrderSuccess()
+          loadOrderSuccess(),
+          loadOrderPrintRequest()
         ]);
       } catch (err) {
         console.error("Error loading orders:", err);
@@ -100,9 +106,10 @@ export default function PrintOrderPage() {
     loadData();
   }, []);
 
-  const loadMoreAwait = async () => {
-    if (!hasMoreAwait) return;
-    await loadOrderReview(pageAwait + 1, true)
+
+  const loadMoreRevew = async () => {
+    if (!hasMoreReview) return;
+    await loadOrderReview(pageReview + 1, true)
   }
   const loadOrderReview = async (pageInput = 0, append = false) => {
     try {
@@ -128,11 +135,10 @@ export default function PrintOrderPage() {
     }
   };
 
-  const loadMoreRevew = async () => {
-    if (!hasMoreReview) return;
-    await loadOrderReview(pageReview + 1, true)
+  const loadMoreAwait = async () => {
+    if (!hasMoreAwait) return;
+    await loadOrderAwait(pageAwait + 1, true)
   }
-
   const loadOrderAwait = async (pageInput = 0, append = false) => {
     try {
       const responseAwait = await getOrderCantPrint({ printStatus: ["AWAITING"], page: pageInput });
@@ -145,7 +151,6 @@ export default function PrintOrderPage() {
           [...prev, ...newOrders].forEach((o) => map.set(o.id, o));
           return Array.from(map.values()).sort((a, b) => b.create_time - a.create_time);
         });
-
       }
       setPageAwait(responseAwait.result.current_page ?? 0);
       const isLast = responseAwait?.result?.last ?? true;
@@ -199,7 +204,7 @@ export default function PrintOrderPage() {
         setOrderSuccessList((prev) => {
           const map = new Map<string, Order>();
           [...prev, ...newOrders].forEach((o) => map.set(o.id, o));
-          return Array.from(map.values()).sort((a, b) => b.create_time - a.create_time);
+          return Array.from(map.values()).sort((a, b) => b.create_print_time - a.create_print_time);
         });
 
       }
@@ -213,6 +218,36 @@ export default function PrintOrderPage() {
     }
   };
 
+
+  const loadMorePrintRequest = async () => {
+    if (!hasMorePrintRequest) return;
+    await loadOrderPrintRequest(pagePrintRequest + 1, true);
+  };
+
+  const loadOrderPrintRequest = async (pageInput = 0, append = false) => {
+    try {
+      const response = await getOrderCantPrint({ printStatus: ["PRINT_REQUEST"], page: pageInput });
+      const newOrders: Order[] = response.result.data;
+
+      if (!append) {
+        setOrderPrintRequestList(newOrders);
+      } else {
+        setOrderPrintRequestList((prev) => {
+          const map = new Map<string, Order>();
+          [...prev, ...newOrders].forEach((o) => map.set(o.id, o));
+          return Array.from(map.values()).sort((a, b) => b.create_time - a.create_time);
+        });
+      }
+
+      setPagePrintRequest(response.result.current_page ?? 0);
+      const isLast = response?.result?.last ?? true;
+      setHasMorePrintRequest(!isLast);
+    } catch (e: any) {
+      alert(e?.message || "Fail load PRINT_REQUEST orders");
+    } finally {
+      setIsLoadingPrintRequest(false);
+    }
+  };
   const refreshData = async () => {
     if (activeTab === "Review") {
       setIsLoadingReview(true)
@@ -228,6 +263,9 @@ export default function PrintOrderPage() {
     } else if (activeTab === "OrderPrint") {
       setIsLoadingSuccess(true)
       await loadOrderSuccess()
+    } else if (activeTab === "PrintRequest") {
+      setIsLoadingPrintRequest(true);
+      await loadOrderPrintRequest();
     }
   }
 
@@ -239,13 +277,15 @@ export default function PrintOrderPage() {
         const newOrder = updated.data;
         console.log(newOrder)
         if (newOrder.print_status === "REVIEW" || newOrder.print_status === "PRINT_REQUEST_FAIL" ) {
-          upsertOrderReview(newOrder);
+          upsertOrderReview(newOrder)
         } else if (newOrder.print_status === "AWAITING") {
           upsertOrderAwait(newOrder);
         } else if (newOrder.print_status === "PRINTED") {
           upsertOrderPrinting(newOrder);
         } else if(newOrder.print_status === "PRINT_REQUEST_SUCCESS" || newOrder.print_status === "PRINT_CANCEL"){
           upsertOrderSuccess(newOrder)
+        } else if (newOrder.print_status === "PRINT_REQUEST") {
+          upsertOrderPrintRequest(newOrder);
         }
       }
     };
@@ -293,8 +333,20 @@ export default function PrintOrderPage() {
         : [...prevOrders, newOrder];
       return updated.sort((a, b) => b.create_time - a.create_time);
     });
+    // remove khỏi print request list
+    setOrderPrintRequestList(prevOrders =>
+      prevOrders.filter(o => o.id !== newOrder.id)
+    );
   };
-
+  const upsertOrderPrintRequest = (newOrder: Order) => {
+    setOrderPrintRequestList(prevOrders => {
+      const exists = prevOrders.some(o => o.id === newOrder.id);
+      let updated = exists
+        ? prevOrders.map(o => (o.id === newOrder.id ? newOrder : o))
+        : [...prevOrders, newOrder];
+      return updated.sort((a, b) => b.create_time - a.create_time);
+    });
+  };
 
   return (
     <div className="bg-white px-6 py-2 shadow-lg h-[calc(100vh-56px)] flex flex-col">
@@ -380,6 +432,21 @@ export default function PrintOrderPage() {
               orderSuccesList={orderSuccessList}
               setOrderSuccesList={setOrderSuccessList}
          />}
+
+        {activeTab === "PrintRequest" && (
+          <Printing
+            skuMPK={skumpk}
+            printShippingMethods={printShippingMethods}
+            hasMore={hasMorePrintRequest}
+            loadMore={loadMorePrintRequest}
+            isLoading={isLoadingPrintRequest}
+            orderReviewList={orderPrintRequestList}
+            setOrderReviewList={setOrderPrintRequestList}
+            variationsPrinteesHub={variationsPrinteesHub}
+            productMenPrint={productMenPrint}
+            printers={printers}
+          />
+        )}
       </div>
     </div>
   );

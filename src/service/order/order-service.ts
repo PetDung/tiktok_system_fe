@@ -147,6 +147,32 @@ export const changePrinterStatus = async (orderId: string, printerStatus : strin
   }
 }
 
+export const changePrinterStatusBatch = async (orderIds: string[], printerStatus : string) => {
+  try {
+    const response = await axiosClient.post<ApiResponse<Order[]>>(
+      `/order/change-status-print/batch/${printerStatus}`,{}, {
+        params : {
+          order_ids : orderIds.join(",")
+        }
+      }
+    );
+    if (response.data.code === 1000) {
+      return response.data;
+    }
+    throw new AuthError(500, "Invalid response from server");
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const serverError = error.response?.data as ApiResponse<any>;
+      throw new AuthError(
+        serverError.code || 500,
+        serverError.message || "Login failed. Please try again."
+      );
+    }
+    throw new AuthError(500, "An unexpected error occurred. Please try again.");
+  }
+}
+
+
 
 export const exportOrderSelected = async (param: { orderIds: string[]}) => {
   try {
