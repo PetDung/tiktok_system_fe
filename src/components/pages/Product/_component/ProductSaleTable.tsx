@@ -11,10 +11,9 @@ import ThumbPreview from "../../Design/_components/ThumbPreview";
 type Props = {
   products: ProductReport[];
   onSelectionChange?: (selected: ProductReport[]) => void;
-  loading: boolean;
 };
 
-export default function ProductSaleTable({ products, onSelectionChange, loading }: Props) {
+export default function ProductSaleTable({ products, onSelectionChange }: Props) {
   const copiedIdRef = useRef<string | null>(null);
 
   const [selectedProducts, setSelectedProducts] = useState<ProductReport[]>([]);
@@ -58,9 +57,7 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
   }, [selectedProducts, onSelectionChange]);
 
   return (
-    <div className="relative h-full min-h-0 overflow-auto shadow-md rounded-lg bg-white"
-      style={{ scrollBehavior: 'smooth' }}
-    >
+    <div className="h-full min-h-0 bg-white">
       <table className="min-w-full text-sm">
         <thead className="bg-gray-300 sticky top-0 z-20">
           <tr>
@@ -174,10 +171,6 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
           })}
         </tbody>
       </table>
-      {loading && (
-        <LoadingIndicator />
-      )}
-
       {openModal && productSelect && (
         <RoleGuard role={"Admin"}>
           <ModalShopAdd
@@ -186,7 +179,6 @@ export default function ProductSaleTable({ products, onSelectionChange, loading 
           />
         </RoleGuard>
       )}
-
     </div>
   );
 }

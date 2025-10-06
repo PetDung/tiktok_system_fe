@@ -270,68 +270,94 @@ export default function OrderItemCard({
                 )}
             </div>
             {
-                !disabledSelect && <div className="flex justify-center gap-3 pt-2 border-t border-gray-100">
+                !disabledSelect &&
+                <div className="flex gap-3 pt-2 border-t border-gray-100">
                     {attribute && isPrintEnabled ? (
-                        <>
-                            {/* Type */}
-                            <div>
-                                <input
-                                    list={`type-options-${item.lineItemFist.id}`}
-                                    value={optionSelect.type}
-                                    onChange={(e) =>
-                                        setOptionSelect({ type: e.target.value, color: "", size: "" })
-                                    }
-                                    disabled={disabledSelect}
-                                    className="px-3 min-w-[120px] max-w-[200px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="-- Type --"
-                                />
-                                <datalist id={`type-options-${item.lineItemFist.id}`}>
-                                    {attribute.attribute.map((t) => (
-                                        <option key={t.key} value={t.key}>
-                                            {t.name}
-                                        </option>
-                                    ))}
-                                </datalist>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex gap-2 ">
+                                    {/* Type */}
+                                    <div>
+                                        <input
+                                            list={`type-options-${item.lineItemFist.id}`}
+                                            value={optionSelect.type}
+                                            onChange={(e) =>
+                                                setOptionSelect({ type: e.target.value, color: "", size: "" })
+                                            }
+                                            disabled={disabledSelect}
+                                            className="px-3 min-w-[120px] max-w-[200px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="-- Type --"
+                                        />
+                                        <datalist id={`type-options-${item.lineItemFist.id}`}>
+                                            {attribute.attribute.map((t) => (
+                                                <option key={t.key} value={t.key}>
+                                                    {t.name}
+                                                </option>
+                                            ))}
+                                        </datalist>
+                                    </div>
+
+                                    {/* Color */}
+                                    <div>
+                                        <input
+                                            list={`color-options-${item.lineItemFist.id}`}
+                                            value={optionSelect.color}
+                                            onChange={(e) =>
+                                                setOptionSelect({ ...optionSelect, color: e.target.value, size: "" })
+                                            }
+                                            disabled={!optionSelect.type || disabledSelect}
+                                            className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder={loadingColors ? "Đang tải..." : "-- Color --"}
+                                        />
+                                        <datalist id={`color-options-${item.lineItemFist.id}`}>
+                                            {colors.map((c) => (
+                                                <option key={c} value={c} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+
+                                    {/* Size */}
+                                    <div>
+                                        <input
+                                            list={`size-options-${item.lineItemFist.id}`}
+                                            value={optionSelect.size}
+                                            onChange={(e) =>
+                                                setOptionSelect({ ...optionSelect, size: e.target.value })
+                                            }
+                                            disabled={!optionSelect.color || disabledSelect}
+                                            className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="-- Size --"
+                                        />
+                                        <datalist id={`size-options-${item.lineItemFist.id}`}>
+                                            {sizes.map((s) => (
+                                                <option key={s} value={s} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 justify-start">
+                                    <form>
+                                        <select id="countries" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                            <option selected>Choose a country</option>
+                                            <option value="US">United States</option>
+                                            <option value="CA">Canada</option>
+                                            <option value="FR">France</option>
+                                            <option value="DE">Germany</option>
+                                        </select>
+                                    </form>
+                                     <form>
+                                        <select id="countries" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                            <option selected>Choose a country</option>
+                                            <option value="US">United States</option>
+                                            <option value="CA">Canada</option>
+                                            <option value="FR">France</option>
+                                            <option value="DE">Germany</option>
+                                        </select>
+                                    </form>
+
+                                </div>
                             </div>
 
-                            {/* Color */}
-                            <div>
-                                <input
-                                    list={`color-options-${item.lineItemFist.id}`}
-                                    value={optionSelect.color}
-                                    onChange={(e) =>
-                                        setOptionSelect({ ...optionSelect, color: e.target.value, size: "" })
-                                    }
-                                    disabled={!optionSelect.type || disabledSelect}
-                                    className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder={loadingColors ? "Đang tải..." : "-- Color --"}
-                                />
-                                <datalist id={`color-options-${item.lineItemFist.id}`}>
-                                    {colors.map((c) => (
-                                        <option key={c} value={c} />
-                                    ))}
-                                </datalist>
-                            </div>
-
-                            {/* Size */}
-                            <div>
-                                <input
-                                    list={`size-options-${item.lineItemFist.id}`}
-                                    value={optionSelect.size}
-                                    onChange={(e) =>
-                                        setOptionSelect({ ...optionSelect, size: e.target.value })
-                                    }
-                                    disabled={!optionSelect.color || disabledSelect}
-                                    className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="-- Size --"
-                                />
-                                <datalist id={`size-options-${item.lineItemFist.id}`}>
-                                    {sizes.map((s) => (
-                                        <option key={s} value={s} />
-                                    ))}
-                                </datalist>
-                            </div>
-                        </>
+                        
                     ) : (
                         <p className="text-sm text-gray-500 italic">Vui lòng chọn nhà in trước hoặc bật in cho sản phẩm</p>
                     )}

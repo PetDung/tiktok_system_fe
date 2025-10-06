@@ -2,6 +2,7 @@ import axiosClient from "@/lib/axiosClient";
 import { ApiResponse, AuthError, Design, DesignResponse } from "../types/ApiResponse";
 import axios from "axios";
 import { DesignRequest } from "@/components/pages/Design/_components/AddDesign";
+import { DesignCursorPageResponse } from "../types/ApiResponse_v2";
 
 
 export type ParamMapping = {
@@ -9,6 +10,12 @@ export type ParamMapping = {
     designId: string;
     skuIds : string [];
 }
+
+export type ParamDesign = {
+    search? : string | null;
+    cursor? : string | null;
+}
+
 
 export type SkuDesignMap = Record<string, Design>;
 
@@ -32,6 +39,32 @@ export async function getAllDesigns() {
     }
 
 
+}
+
+
+export async function getDesignsCursor(param : ParamDesign = {}) {
+     try {
+        console.log("Fetching designs cursor...");
+        const response = await axiosClient.get<DesignCursorPageResponse>(`/design/next-page`, {
+            params: {
+                search: param.search,
+                next_cursor: param.cursor
+            }
+        });
+        if (response.data.code === 1000) {
+            return response.data;
+        }
+        throw new AuthError(500, "Invalid response from server");
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            const serverError = error.response?.data as ApiResponse<any>;
+            throw new AuthError(
+                serverError.code || 500,
+                serverError.message || "Login failed. Please try again."
+            );
+        }
+        throw new AuthError(500, "An unexpected error occurred. Please try again.");
+    }
 }
 
 

@@ -19,6 +19,7 @@ import SkuTable from "../_components/SkuTable";
 import DesignTable from "../_components/DesignTable";
 import { useDesigns } from "@/lib/customHooks/useDesgins";
 import { useShops } from "@/lib/customHooks/useShops";
+import { useDesignsCursor } from "@/lib/customHooks/useDesginsCursor";
 
 export default function MappingDesignPage() {
   const searchParams = useSearchParams();
@@ -42,6 +43,7 @@ export default function MappingDesignPage() {
 
 
   const {data : designResponse, updateCache : updateCacheDesigns} = useDesigns();
+
   const designs: Design[] = designResponse?.result ?? [];
   const { data: shopsResponse, isLoading: shopLoading } = useShops();
   const shops = (shopsResponse?.result ?? []).sort(
@@ -216,7 +218,6 @@ export default function MappingDesignPage() {
             <div className="h-full flex flex-col">
               <div className="flex-1 min-h-0">
                 <DesignTable
-                  designs={designs}
                   designSearch={designSearch}
                   setDesignSearch={setDesignSearch}
                   selectedDesign={selectedDesign}

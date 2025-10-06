@@ -1,53 +1,20 @@
 "use client";
 
-import React, { Fragment, useRef, useCallback, useEffect, useState } from "react";
+import React, { Fragment, useRef, useState } from "react";
 import { formatDate, getCategoryPathText, Product, ShopResponse } from "@/service/types/ApiResponse";
 import { Copy, RotateCcw } from "lucide-react";
-import { debounce } from "lodash";
-import LoadingIndicator from "@/components/UI/LoadingIndicator";
 import ModalShopAdd from "./ModalShopAdd";
-import { useAuth } from "@/Context/AuthContext";
 import RoleGuard from "@/components/UI/RoleGuard";
 import ThumbPreview from "../../Design/_components/ThumbPreview";
 
 type Props = {
   products: Product[];
-  loading?: boolean;
-  hasMore?: boolean;
-  onLoadMore?: () => void;
 };
 
-export default function ProductActiveTable({
-  products,
-  loading = false,
-  hasMore = false,
-  onLoadMore,
-}: Props) {
+export default function ProductActiveTable({products}: Props) {
   const copiedIdRef = useRef<string | null>(null);
-  const tableRef = useRef<HTMLDivElement>(null);
-
   const [productSelect, setProductSelect] = useState<Product | null>(null)
-  const [openModal, setOpen] = useState<boolean>(false)
-
-  /** Scroll handler debounced */
-  const handleScroll = useCallback(
-    debounce(() => {
-      const div = tableRef.current;
-      if (!div || loading || !hasMore) return;
-      const { scrollTop, scrollHeight, clientHeight } = div;
-      if (scrollTop + clientHeight >= scrollHeight - 150) {
-        onLoadMore?.();
-      }
-    }, 150),
-    [loading, hasMore, onLoadMore]
-  );
-
-  useEffect(() => {
-    const div = tableRef.current;
-    if (!div) return;
-    div.addEventListener("scroll", handleScroll);
-    return () => div.removeEventListener("scroll", handleScroll);
-  }, [handleScroll]);
+  const [openModal, setOpen] = useState<boolean>(false);
 
   const handleCopy = async (productUrl: string, id: string) => {
     try {
@@ -58,13 +25,8 @@ export default function ProductActiveTable({
       console.error("Copy failed", e);
     }
   };
-    // Loading indicator component
   return (
-    <div
-      ref={tableRef}
-      className="relative h-full min-h-0 overflow-auto shadow-md rounded-lg bg-white"
-      style={{ scrollBehavior: 'smooth' }}
-    >
+    <div className="h-full min-h-0 bg-white">
       <table className="min-w-full text-xs">
         <thead className="bg-gray-300 sticky top-0 z-20">
           <tr>
@@ -180,10 +142,6 @@ export default function ProductActiveTable({
           })}
         </tbody>
       </table>
-      {loading && (
-        <LoadingIndicator/>
-      )}
-
       {openModal && productSelect && (
         <RoleGuard role={"Admin"}>
             <ModalShopAdd 

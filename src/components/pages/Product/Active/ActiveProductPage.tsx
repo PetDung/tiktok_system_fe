@@ -9,32 +9,35 @@ import ProductActiveTable from "../_component/ProductActiveTable";
 import ExcelExportButton from "@/components/UI/ExcelExportButton";
 import { columnsProductActive } from "@/utils/ConfigExcel";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
+import { getProductActiveCursor } from "@/service/product/product-service_v2";
+import { cn } from './../../../../lib/utils';
+import LoadMoreWrapper from "@/components/UI/LoadMordeWrapper";
+import LoadingIndicator from "@/components/UI/LoadingIndicator";
 
 type DateState = {
   startDate: number | null;
   endDate: number | null;
 };
 
+type FetchProductActiveParams = {
+  startDate?: number | null;
+  endDate?: number | null;
+  nextCursor?: string | null;
+  append?: boolean;
+  productId?: string | null;
+};
+
 export default function ActiveProductComponent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectProducts, setSelectProducts] = useState<Product[]>([]);
   const [keyword, setKeyword] = useState<string>("");
-  const [page, setPage] = useState<number>(0);
-  const [isLast, setIsLast] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
   const [loadingSetup, setLoadingSetup] = useState<boolean>(false);
-  const loadingRef = useRef<boolean>(false);
-  const [totalOrders, setTotalOrders] = useState<number>(0);
-  
+  const [pageToken, setPageToken] = useState<string>("");
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [total, setTotal] = useState<number>(0);
 
   const [date, setDate] = useState<DateState>({ startDate: null, endDate: null });
 
-  /** Sync loading ref */
-  useEffect(() => {
-    loadingRef.current = loading;
-  }, [loading]);
-
-  /** Convert date -> timestamp UTC (seconds) */
   const toUtcTimestampSeconds = useCallback(
     (date: Date | null, isEnd: boolean = false): number | null => {
       if (!date) return null;
@@ -46,95 +49,93 @@ export default function ActiveProductComponent() {
     []
   );
 
+
   /** Fetch API */
-  const fetchProduct = useCallback(
-    async (
-      params: { keyword?: string; startTime?: number | null; endTime?: number | null; page: number },
-      append = false
-    ) => {
-      try {
-        setLoading(true);
-        const response = await getProductActive(params);
-        const list = response?.result?.products ?? [];
-        setIsLast(response?.result?.last ?? true);
-        setProducts((prev) => {
-          if (!append) return list;
+  const fetchProductActiveCursor = async (params: FetchProductActiveParams = {}) => {
+    const {
+      startDate = null,
+      endDate = null,
+      nextCursor = "",
+      append = false,
+      productId = null,
+    } = params;
 
-          const existingIds = new Set(prev.map(p => p.id));
-          const uniqueNew = list.filter(p => !existingIds.has(p.id));
+    try {
+      const response = await getProductActiveCursor({
+        startTime: startDate,
+        endTime: endDate,
+        nextCursor,
+        productId,
+      });
+      const list = response?.result?.data ?? [];
+      console.log("response", append);
+      setProducts(prev => append ? [...prev, ...list] : list);
+      setHasMore(response?.result?.hasMore ?? false);
+      setPageToken(response?.result?.nextCursor ?? "");
+      setTotal(response?.result?.total ?? 0);
+    } catch (error) {
+      console.error("Fetch product error:", error);
+    }
+  }
 
-          return [...prev, ...uniqueNew];
-        });
-        setTotalOrders(response.result.totalCount)
-      } catch (error) {
-        console.error("Fetch product error:", error);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
   const allProductActive = async () => {
     setLoadingSetup(true);
     try {
-        const response = await getAllProductActive({
-          startTime: date.startDate,
-          endTime : date.endDate
-        });
-        setSelectProducts(response?.result || []);
-      } catch (error) {
-        console.error("Fetch product error:", error);
-      } finally {
-        setLoadingSetup(false);
-      }
+      const response = await getAllProductActive({
+        startTime: date.startDate,
+        endTime: date.endDate
+      });
+      setSelectProducts(response?.result || []);
+    } catch (error) {
+      console.error("Fetch product error:", error);
+    } finally {
+      setLoadingSetup(false);
+    }
   };
 
+  const loadMore = async () =>{
+    if (!hasMore) return;
+    const param : FetchProductActiveParams = {
+      startDate  : date.startDate,
+      endDate : date.endDate,
+      nextCursor : pageToken,
+      append : true,
+    }
+    await fetchProductActiveCursor(param);
+  }
 
-  /** Debounced search */
-  const triggerSearch = useMemo(
-    () =>
-      debounce((kw: string, start: number | null, end: number | null) => {
-        setPage(0);
-        fetchProduct({ keyword: kw, startTime: start, endTime: end, page: 0 }, false);
-      }, 400),
-    [fetchProduct]
+
+  const handleChangeDate = useCallback(
+      async (start: Date | null, end: Date | null) => {
+        const startUtc = toUtcTimestampSeconds(start, false);
+        const endUtc = toUtcTimestampSeconds(end, true);
+        setDate({ startDate: startUtc, endDate: endUtc });
+  
+        const param : FetchProductActiveParams = {
+          startDate  : startUtc,
+          endDate : endUtc,
+        }
+  
+        await fetchProductActiveCursor(param);
+      },
+      [toUtcTimestampSeconds, fetchProductActiveCursor]
   );
 
-  /** Handle keyword input */
+  const debouncedSearch = useCallback(
+    debounce(async (value: string) => {
+      await fetchProductActiveCursor({ productId: value || null });
+    }, 500),
+    [fetchProductActiveCursor]
+  );
+
+
   const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setKeyword(value);
-    triggerSearch(value, date.startDate, date.endDate);
+    debouncedSearch(value);
   };
 
-  /** Handle date change */
-  const handleChangeDate = useCallback(
-    (start: Date | null, end: Date | null) => {
-      const startUtc = toUtcTimestampSeconds(start, false);
-      const endUtc = toUtcTimestampSeconds(end, true);
 
-      setDate({ startDate: startUtc, endDate: endUtc });
-      setPage(0);
-      fetchProduct({ keyword, startTime: startUtc, endTime: endUtc, page: 0 }, false);
-    },
-    [keyword, toUtcTimestampSeconds, fetchProduct]
-  );
-
-  /** Load initial */
-  useEffect(() => {
-    fetchProduct({ page: 0 }, false);
-  }, [fetchProduct]);
-
-  /** Load more */
-  const loadMore = useCallback(() => {
-    if (loadingRef.current || isLast) return; // guard bằng ref
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchProduct(
-      { keyword, startTime: date.startDate, endTime: date.endDate, page: nextPage },
-      true
-    );
-  }, [page, keyword, date, isLast, fetchProduct]);
 
   return (
     <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col">
@@ -142,9 +143,9 @@ export default function ActiveProductComponent() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3 md:gap-0">
         <div className="flex items-center space-x-3">
           <h2 className="text-xl font-bold text-gray-900">Product Active</h2>
-          {totalOrders > 0 && (
+          {total > 0 && (
             <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-              {products.length} / {totalOrders} product
+              {products.length} / {total} product
             </span>
           )}
         </div>
@@ -162,7 +163,7 @@ export default function ActiveProductComponent() {
                 type="button"
                 onClick={() => {
                   setKeyword("");
-                  triggerSearch("", date.startDate, date.endDate);
+                  handleKeywordChange({ target: { value: "" } } as any);
                 }}
                 className="absolute right-2 text-gray-400 hover:text-gray-600"
               >
@@ -172,11 +173,11 @@ export default function ActiveProductComponent() {
           </div>
           <DateRangePicker onChange={handleChangeDate} />
           <ExcelExportButton
-            data={selectProducts}        
-            columns={columnsProductActive}           
+            data={selectProducts}
+            columns={columnsProductActive}
             fileName={`products_active_${Date.now()}.xlsx`}   // timestamp hiện tại
-            buttonText="Export"         
-            className="my-2"    
+            buttonText="Export"
+            className="my-2"
           />
           <button
             className={`
@@ -193,14 +194,12 @@ export default function ActiveProductComponent() {
           </button>
         </div>
       </div>
-
       <div className="flex-1 min-h-0 overflow-auto">
-        <ProductActiveTable
-          products={products}
-          loading={loading}
-          hasMore={!isLast}
-          onLoadMore={loadMore}
-        />
+        <LoadMoreWrapper hasMore={hasMore} loadMore={loadMore} loader={(<LoadingIndicator />)} rootMargin="300px">
+          <ProductActiveTable
+            products={products}
+          />
+        </LoadMoreWrapper>
       </div>
       <LoadingOverlay show={loadingSetup} />
     </div>

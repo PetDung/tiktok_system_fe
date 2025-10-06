@@ -1,23 +1,36 @@
 "use client"
-
-import { getProductSales } from "@/service/product/product-service";
 import { ProductReport } from "@/service/types/ApiResponse";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import ProductSaleTable from "../_component/ProductSaleTable";
 import DateRangePicker from "@/components/UI/DateRangePicker";
 import { columnsProductSale } from "@/utils/ConfigExcel";
 import ExcelExportButton from "@/components/UI/ExcelExportButton";
+import { getProductSalesCursor } from "@/service/product/product-sale__v2";
+import LoadMoreWrapper from "@/components/UI/LoadMordeWrapper";
+import LoadingIndicator from "@/components/UI/LoadingIndicator";
+import { debounce, set } from "lodash";
 
 type DateState = {
   startDate: number | null;
   endDate: number | null;
 };
 
+type FetchProductSaleParams = {
+  startDate?: number | null;
+  endDate?: number | null;
+  nextCursor?: string | null;
+  append?: boolean;
+  productId?: string | null;
+};
+
 export default function ProductSale() {
   const [productSale, setProductSale] = useState<ProductReport[]>([]);
   const [date, setDate] = useState<DateState>({ startDate: null, endDate: null });
   const [selectProducts, setSelectProducts] = useState<ProductReport[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [pageToken, setPageToken] = useState<string | null>("");
+  const [total, setTotal] = useState<number>(0);
+  const [keyword, setKeyword] = useState<string>("");
 
 
   /** Convert date -> timestamp UTC (seconds) */
@@ -31,36 +44,75 @@ export default function ProductSale() {
     },
     []
   );
+  const fetchProductSalePage =  async (params: FetchProductSaleParams = {}) => {
+    const {
+      startDate = null,
+      endDate = null,
+      nextCursor = "",
+      append = false,
+      productId = null,
+    } = params;
 
-  const fetchProductSale = useCallback(
-    async (startDate: number | null, endDate: number | null) => {
-      setLoading(true)
-      try {
-        const response = await getProductSales({ startTime: startDate, endTime: endDate });
-        const list = response?.result?.products ?? [];
-        setProductSale(list);
-      } catch (error) {
-        console.error("Fetch product error:", error);
-      }finally{
-          setLoading(false)
-      }
-    },
-    []
-  );
+    try {
+      const response = await getProductSalesCursor({
+        startTime: startDate,
+        endTime: endDate,
+        nextCursor,
+        productId,
+      });
 
-  // Tự fetch khi date thay đổi
-  useEffect(() => {
-    fetchProductSale(date.startDate, date.endDate);
-  }, [date, fetchProductSale]);
+      const list = response?.result?.data ?? [];
+      setProductSale((prev) => (append ? [...prev, ...list] : list));
+      setHasMore(response?.result?.hasMore ?? false);
+      setPageToken(response?.result?.nextCursor ?? "");
+      setTotal(response?.result?.total ?? 0);
+    } catch (error) {
+      alert("Fetch product error: " + error);
+    }
+  }
+
+  const loadMore =  async () => {
+    if (!hasMore) return;
+
+    const param : FetchProductSaleParams = {
+      startDate  : date.startDate,
+      endDate : date.endDate,
+      nextCursor : pageToken,
+      append : true,
+    }
+    await fetchProductSalePage(param);
+  }
 
   const handleChangeDate = useCallback(
-    (start: Date | null, end: Date | null) => {
+    async (start: Date | null, end: Date | null) => {
       const startUtc = toUtcTimestampSeconds(start, false);
       const endUtc = toUtcTimestampSeconds(end, true);
       setDate({ startDate: startUtc, endDate: endUtc });
+
+      const param : FetchProductSaleParams = {
+        startDate  : startUtc,
+        endDate : endUtc,
+      }
+
+      await fetchProductSalePage(param);
     },
-    [toUtcTimestampSeconds]
+    [toUtcTimestampSeconds, fetchProductSalePage]
   );
+
+  const debouncedSearch = useCallback(
+    debounce(async (value: string) => {
+      await fetchProductSalePage({ productId: value || null });
+    }, 500),
+    [fetchProductSalePage]
+  );
+
+
+  const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setKeyword(value);
+    debouncedSearch(value);
+  };
+
 
   return (
     <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col">
@@ -70,12 +122,34 @@ export default function ProductSale() {
           <h2 className="text-xl font-bold text-gray-900">Product Sale</h2>
           {productSale.length > 0 && (
             <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-              {productSale.length} / {productSale.length} product
+              {productSale.length} / {total} product
             </span>
           )}
         </div>
         <div className="flex gap-2 items-center">
           <DateRangePicker onChange={handleChangeDate} />
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              value={keyword}
+              onChange={handleKeywordChange}
+              placeholder="Search by ID/ Title"
+              className="border border-gray-300 rounded-lg px-4 py-2 pr-8 min-w-[300px] text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+            {keyword && (
+              <button
+                type="button"
+                onClick={() => {
+                  setKeyword("");
+                  handleKeywordChange({ target: { value: "" } } as any);
+                }}
+                className="absolute right-2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
           <ExcelExportButton
                 data={selectProducts}
                 columns={columnsProductSale}
@@ -86,7 +160,9 @@ export default function ProductSale() {
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-auto">
-          <ProductSaleTable products={productSale} onSelectionChange={setSelectProducts} loading={loading} />
+           <LoadMoreWrapper hasMore={hasMore} loadMore={loadMore} loader={(<LoadingIndicator />)} rootMargin = "1000px">
+              <ProductSaleTable products={productSale} onSelectionChange={setSelectProducts}/>
+           </LoadMoreWrapper>
       </div>
     </div>
   );
