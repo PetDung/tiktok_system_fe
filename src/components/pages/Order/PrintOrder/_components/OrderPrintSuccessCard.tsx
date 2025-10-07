@@ -1,8 +1,9 @@
 import { formatDate, Order, PrintShop } from "@/service/types/ApiResponse";
 import { Img } from "react-image";
-import { Printer, Truck, X } from "lucide-react";
+import { Printer, RefreshCcw, Truck, X } from "lucide-react";
 import OptionalSelect, { Option } from "@/components/UI/OptionalSelect";
 import { optionsChangeStatus, OrderWithFlag } from "./TablOrderPrint";
+import { synchronizePrintOrder, SynchronizePrintOrderParam } from "@/service/print-order/print-order-service";
 
 interface Prop {
     order: OrderWithFlag
@@ -13,18 +14,46 @@ interface Prop {
 const OrderPrintSuccessCard = ({ order, cancel, changStausOrderPrint }: Prop) => {
     const getStatusColor = (status: string) => {
         switch (status) {
+            // ❌ Trạng thái thất bại / hủy
             case "CANCELLED":
+            case "PRINT_CANCEL":
+            case "PRINT_REQUEST_FAIL":
                 return "bg-red-500 text-white";
-            case "PRINT_CANCE":
-                return "bg-red-500 text-white";    
+
+            // ✅ Trạng thái thành công
             case "COMPLETED":
-                return "bg-green-500 text-white";
             case "DELIVERED":
-                return "bg-blue-500 text-white";
-            default:
+            case "PRINT_REQUEST_SUCCESS":
+            case "PRINTED":
+                return "bg-green-500 text-white";
+
+            // 🕓 Đang chờ xử lý
+            case "AWAITING_COLLECTION":
+            case "REVIEW":
+            case "PRINT_REQUEST":
                 return "bg-orange-500 text-white";
+
+            // 🧾 Người dùng yêu cầu in
+            case "USER_PRINT":
+                return "bg-blue-500 text-white";
+
+            // 🌱 Trạng thái mới
+            case "New":
+                return "bg-indigo-500 text-white";
+
+            // Mặc định
+            default:
+                return "bg-gray-400 text-white";
         }
     };
+
+    const handlSynchronize = async(order : Order) => {
+        const response = await synchronizePrintOrder({
+            orderId: order.id,
+            orderFulfill: order.order_fulfill_id,
+        });
+        console.log("synchronizePrintOrder", response);
+    }
 
     return (
         <div className={`transition-all duration-700 ease-linear${order._isRemoving
@@ -44,7 +73,7 @@ const OrderPrintSuccessCard = ({ order, cancel, changStausOrderPrint }: Prop) =>
                                 #{order.id}
                             </a>
                         </p>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.print_status)}`}>
                             {order.print_status}
                         </span>
                     </div>
@@ -89,6 +118,13 @@ const OrderPrintSuccessCard = ({ order, cancel, changStausOrderPrint }: Prop) =>
                                         {order.status}
                                     </span>
                                 </div>
+                               {order.origin_print_status && (
+                                 <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.origin_print_status)}`}>
+                                        {order.origin_print_status}
+                                    </span>
+                                </div>
+                               )}
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-700 font-bold">
                                         {order.shipping_type} SHIP
@@ -140,7 +176,8 @@ const OrderPrintSuccessCard = ({ order, cancel, changStausOrderPrint }: Prop) =>
 
                         {/* Actions */}
                         <div className="flex flex-col items-end gap-2">
-                            {order.print_status === "PRINT_REQUEST_SUCCESS" ? (
+                            {order.print_status === "PRINT_REQUEST_SUCCESS" || order.print_status === "USER_PRINT"  ? (
+                               <>
                                 <button
                                     onClick={() => cancel(order)}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -149,6 +186,14 @@ const OrderPrintSuccessCard = ({ order, cancel, changStausOrderPrint }: Prop) =>
                                     <X className="w-3 h-3" />
                                     Hủy In
                                 </button>
+                                 <button
+                                    onClick={() => handlSynchronize(order)}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg border border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={order.status === "CANCELLED" || order.status === "COMPLETED"}
+                                >   
+                                    <RefreshCcw className="w-3 h-3" />
+                                </button>
+                               </>
                             ) : (
                                 <OptionalSelect
                                     value={order?.print_status?? null}
@@ -160,6 +205,7 @@ const OrderPrintSuccessCard = ({ order, cancel, changStausOrderPrint }: Prop) =>
                                     onChange={(value) => changStausOrderPrint(order, value)}
                                 />
                             )}
+
                         </div>
                     </div>
                 </div>

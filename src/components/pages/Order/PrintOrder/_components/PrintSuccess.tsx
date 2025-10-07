@@ -7,6 +7,8 @@ import { changePrinterStatus } from "@/service/order/order-service";
 import { OrderWithFlag } from "./TablOrderPrint";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
 import { useState } from "react";
+import LoadMoreWrapper from "@/components/UI/LoadMordeWrapper";
+import { showConfirmAlert } from "./ConfirmAlert";
 
 type Props = {
     orderSuccesList: OrderWithFlag[];
@@ -20,12 +22,20 @@ export default function PrintSucc(
     {
         orderSuccesList,
         setOrderSuccesList,
-        isLoading,
         loadMore,
         hasMore,
     }: Props) {
 
     const cancel = async (order: Order) => {
+        const confirmed = await showConfirmAlert({
+            title: "Xóa mục",
+            message: "Hành động này không thể hoàn tác. Bạn có chắc chắn?",
+            confirmText: "Hủy",
+            cancelText: "Giữ lại"
+        });
+        if (!confirmed) {
+           return;
+        }
         try {
             setLoadingOverLay(true)
             const response = await changePrinterStatus(order.id, "PRINT_CANCEL");
@@ -103,40 +113,21 @@ export default function PrintSucc(
             setOrderSuccesList((prevOrders: any) => prevOrders.filter((o: any) => o.id !== orderId));
         }, 300);
     };
-
-
-
     return (
         <div>
-            {isLoading && <div className="h-20 flex items-center justify-center">
-                <LoadingIndicator />
-            </div>}
-            {orderSuccesList && orderSuccesList.length > 0 && (
-                orderSuccesList.map(item => (
-                    <OrderPrintSuccessCard
-                        changStausOrderPrint = {changStausOrderPrint}
-                        cancel={cancel}
-                        order={item}
-                        key={item.id}
-                    />
-                ))
-            )}
-            <div>
-                {hasMore && (
-                    <div className="flex justify-center items-center">
-                        <button
-                            onClick={loadMore}
-                            disabled={isLoading}
-                            className="px-3 sticky top-0 py-1 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 flex items-center"
-                        >
-                            {isLoading ? (
-                                <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4 mr-2"></span>
-                            ) : null}
-                            Load thêm
-                        </button>
-                    </div>
+
+             <LoadMoreWrapper hasMore={hasMore} loadMore={loadMore} loader={<LoadingIndicator />}>
+                {orderSuccesList && orderSuccesList.length > 0 && (
+                    orderSuccesList.map(item => (
+                        <OrderPrintSuccessCard
+                            changStausOrderPrint = {changStausOrderPrint}
+                            cancel={cancel}
+                            order={item}
+                            key={item.id}
+                        />
+                    ))
                 )}
-            </div>
+            </LoadMoreWrapper>
             <LoadingOverlay show= {loadingOverlay}/>
         </div>
     );

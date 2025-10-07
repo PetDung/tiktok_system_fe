@@ -3,23 +3,18 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getProdcDetails } from "@/service/product/product-service";
 import {
-  createDesign,
-  deleteDesign,
   mappingDesign,
   ParamMapping,
 } from "@/service/design/design-service";
 
-import { Design, ShopResponse } from "@/service/types/ApiResponse";
+import { ShopResponse } from "@/service/types/ApiResponse";
 import { ProductDetails, Sku } from "@/service/types/productDetails";
 import ProductCard from "../_components/ProductCard";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
-import DesignModal, { DesignRequest } from "../_components/AddDesign";
 import SearchBar from "../_components/SearchBar";
 import SkuTable from "../_components/SkuTable";
 import DesignTable from "../_components/DesignTable";
-import { useDesigns } from "@/lib/customHooks/useDesgins";
 import { useShops } from "@/lib/customHooks/useShops";
-import { useDesignsCursor } from "@/lib/customHooks/useDesginsCursor";
 
 export default function MappingDesignPage() {
   const searchParams = useSearchParams();
@@ -30,7 +25,6 @@ export default function MappingDesignPage() {
   const [productId, setProductId] = useState(productIdParam);
   const [shop, setShop] = useState(shopIdParam);
   const [skuSearch, setSkuSearch] = useState(skuIdParam);
-  const [designSearch, setDesignSearch] = useState("");
 
   const [productDetails, setProductDetails] = useState<ProductDetails>();
   const [skus, setSkus] = useState<Sku[]>([]);
@@ -39,12 +33,7 @@ export default function MappingDesignPage() {
   const [selectedDesign, setSelectedDesign] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
 
-
-  const {data : designResponse, updateCache : updateCacheDesigns} = useDesigns();
-
-  const designs: Design[] = designResponse?.result ?? [];
   const { data: shopsResponse, isLoading: shopLoading } = useShops();
   const shops = (shopsResponse?.result ?? []).sort(
     (a: ShopResponse, b: ShopResponse) =>
@@ -110,15 +99,10 @@ export default function MappingDesignPage() {
 
     setLoading(true);
     try {
-      const response = await mappingDesign(payload);
-      console.log(response);
+      await mappingDesign(payload);
       await handleSearch();
-      
-      // Show success message with more details
-      const successMessage = `Mapping thành công!\n- SKUs: ${selectedSkus.length}\n- Design: ${designs.find(d => d.id === selectedDesign)?.name || 'N/A'}`;
+      const successMessage = `Mapping thành công!'}`;
       alert(successMessage);
-      
-      // Reset selections after successful mapping
       setSelectedSkus([]);
       setSelectedDesign("");
     } catch (error) {
@@ -128,50 +112,6 @@ export default function MappingDesignPage() {
       setLoading(false);
     }
   };
-
-  const handleSubmitDesign = async (data: DesignRequest) => {
-    try {
-      const response =  await createDesign(data);
-      const newDesgin = response.result;
-      updateCacheDesigns({
-        ...designResponse!, // giữ nguyên status, message cũ
-        result: [newDesgin, ...designResponse?.result || []]
-      });
-      alert("Thêm design thành công!");
-    } catch (error) {
-      console.error(error);
-      alert("Có lỗi khi thêm design: " + error);
-    }
-  };
-
-  const handleDeleteDesign = async (designId: string) => {
-    const designName = designs.find(d => d.id === designId)?.name || 'design này';
-    if (!confirm(`Bạn có chắc muốn xóa "${designName}"?`)) return;
-    
-    setLoading(true);
-    try {
-      const response = await deleteDesign(designId);
-      if (response.code === 1000) {
-        alert("Xóa design thành công");
-        updateCacheDesigns({
-          ...designResponse!, // giữ nguyên status, message cũ
-          result: designResponse?.result
-            ? designResponse.result.filter(item => item.id !== designId)
-            : []
-        });
-
-        if (selectedDesign === designId) {
-          setSelectedDesign("");
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Có lỗi khi xóa design: " + error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   return (
     <div className="bg-white p-6 shadow-lg h-[calc(100vh-56px)] flex flex-col overflow-hidden">
@@ -218,12 +158,8 @@ export default function MappingDesignPage() {
             <div className="h-full flex flex-col">
               <div className="flex-1 min-h-0">
                 <DesignTable
-                  designSearch={designSearch}
-                  setDesignSearch={setDesignSearch}
                   selectedDesign={selectedDesign}
                   setSelectedDesign={setSelectedDesign}
-                  handleDeleteDesign={handleDeleteDesign}
-                  setOpen={setOpen}
                 />
               </div>
             </div>
@@ -233,11 +169,6 @@ export default function MappingDesignPage() {
 
       {/* Modals and Overlays */}
       <LoadingOverlay show={loading} />
-      <DesignModal
-        open={open}
-        onClose={() => setOpen(false)}
-        onSubmit={handleSubmitDesign}
-      />
     </div>
   );
 }

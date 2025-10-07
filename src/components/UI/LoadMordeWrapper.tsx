@@ -9,6 +9,7 @@ interface LoadMoreWrapperProps {
   hasMore: boolean;
   rootMargin?: string;
   loader?: React.ReactNode; // 👈 cho phép truyền loader custom
+  loading? : boolean
 }
 
 export default function LoadMoreWrapper({
@@ -17,6 +18,7 @@ export default function LoadMoreWrapper({
   hasMore,
   rootMargin = "1000px",
   loader, // 👈 nhận loader custom
+  loading = false
 }: LoadMoreWrapperProps) {
   const { ref: loaderRef, inView } = useInView({
     threshold: 0,
@@ -41,11 +43,12 @@ export default function LoadMoreWrapper({
       isFirstMount.current = false;
       return;
     }
-    if (!inView || isLoading.current) return;
+    if (!inView || isLoading.current || loading) return;
 
     const doLoadMore = async () => {
       try {
         isLoading.current = true;
+        console.log("⏳ Loading more...");
         await savedLoadMore.current();
       } catch (err) {
         console.error("⚠️ Load more error:", err);
@@ -56,7 +59,6 @@ export default function LoadMoreWrapper({
         }, 600);
       }
     };
-
     doLoadMore();
   }, [inView, hasMore]);
 

@@ -6,6 +6,7 @@ import { CategoryPrintPrinteesHub, ProductMenPrint } from "@/service/print-order
 import LoadingIndicator from "@/components/UI/LoadingIndicator";
 import { PrintShippMethod } from "@/service/types/PrintOrder";
 import { SKUMPK } from "@/service/print-order/data";
+import LoadMoreWrapper from "@/components/UI/LoadMordeWrapper";
 
 type Props = {
     variationsPrinteesHub: CategoryPrintPrinteesHub[];
@@ -26,7 +27,6 @@ export default function AwaitDesign(
          productMenPrint, 
          printers, 
          orderAwaitList,
-         isLoading,
          setOrderAwaitList,
          loadMore,
          hasMore,
@@ -37,30 +37,17 @@ export default function AwaitDesign(
 ) {
     return (
         <div>
-            {isLoading && <div className="h-20 flex items-center justify-center">
-                <LoadingIndicator />
-            </div>}
-            {!isLoading && <TablOrderPrint
-                skuMPK={skuMPK}
-                printShippingMethods = {printShippingMethods}
-                setOrder = {setOrderAwaitList}
-                variationsPrinteesHub={variationsPrinteesHub}
-                productMenPrint={productMenPrint}
-                printers={printers}
-                orderList={orderAwaitList}
-            />}
-             {hasMore && (
-                <button
-                    onClick={loadMore}
-                    disabled={isLoading}
-                    className="px-3 sticky top-0 py-1 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 flex items-center"
-                    >
-                    {isLoading ? (
-                        <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4 mr-2"></span>
-                    ) : null}
-                    Load thêm
-            </button>
-            )}
+            <LoadMoreWrapper hasMore={hasMore} loadMore={loadMore} loader={<LoadingIndicator />}>
+                <TablOrderPrint
+                    skuMPK={skuMPK}
+                    printShippingMethods={printShippingMethods}
+                    setOrder={setOrderAwaitList}
+                    variationsPrinteesHub={variationsPrinteesHub}
+                    productMenPrint={productMenPrint}
+                    printers={printers}
+                    orderList={orderAwaitList}
+                />
+            </LoadMoreWrapper>
         </div>
     );
 }

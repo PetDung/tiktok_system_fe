@@ -1,41 +1,75 @@
 import ThumbPreview from "@/components/pages/Design/_components/ThumbPreview";
-import { getAllDesigns, mappingDesign, ParamMapping } from "@/service/design/design-service";
+import { getAllDesigns, getDesignsCursor, mappingDesign, ParamMapping } from "@/service/design/design-service";
 import { Design, LineItem } from "@/service/types/ApiResponse";
 import { X, Image, Package, Search, Grid, List, Eye } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LineItemHasQuantity } from "./OrderItemModalView";
+import LoadMoreWrapper from "@/components/UI/LoadMordeWrapper";
+import LoadingIndicator from "@/components/UI/LoadingIndicator";
+import { debounce } from "lodash";
+import LoadingOverlay from "@/components/UI/LoadingOverlay";
 
 type ModalProps = {
     onClose: () => void;
     item: LineItemHasQuantity;
 };
 
+type FetchDesignParams = {
+    cursor?: string | null;
+    append?: boolean;
+    search?: string | null;
+};
+
 export default function ModalDesignAdd({ onClose, item }: ModalProps) {
     const [designs, setDesigns] = useState<Design[]>([]);
-    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedDesign, setSelectedDesign] = useState<Design | null>(item.lineItemFist.design || null);
-    useEffect(() => {
-        (async () => {
-            setLoading(true);
-            try {
-                await fetchDesign();
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, []);
+    const [loading, setLoading] = useState(false);
 
-    const fetchDesign = async () => {
-        const responseDesignFetch = await getAllDesigns();
-        setDesigns(responseDesignFetch.result);
+    const [pageToken, setPageToken] = useState<string>("");
+    const [hasMore, setHasMore] = useState<boolean>(true);
+    const [total, setTotal] = useState<number>(0);
+
+
+    const fetchDesignCursor = async (params: FetchDesignParams) => {
+        const {
+            cursor = "",
+            append = false,
+            search = null,
+        } = params;
+
+        const response = await getDesignsCursor({
+            cursor, search
+        });
+        const list = response?.result?.data ?? [];
+        setDesigns(prev => append ? [...prev, ...list] : list);
+        setHasMore(response?.result?.hasMore ?? false);
+        setPageToken(response?.result?.nextCursor ?? "");
+        setTotal(response?.result?.total ?? 0);
     };
 
-    const filteredDesigns = designs.filter(design =>
-        design.name.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const loadMore = async () =>{
+        if (!hasMore) return;
+        const param : FetchDesignParams = {
+            cursor : pageToken,
+            append : true,
+        }
+        await fetchDesignCursor(param);
+    }
+
+    const debouncedSearch = useCallback(
+        debounce(async (value: string) => {
+            await fetchDesignCursor({ search: value || null });
+        }, 500),
+        [fetchDesignCursor]
     );
+
+    const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        debouncedSearch(value);
+    };
 
     const handleDesignSelect = (design: Design) => {
         setSelectedDesign(design);
@@ -118,7 +152,7 @@ export default function ModalDesignAdd({ onClose, item }: ModalProps) {
                                     type="text"
                                     placeholder="Tìm kiếm design..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={handleKeywordChange}
                                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
                                 />
                             </div>
@@ -127,39 +161,20 @@ export default function ModalDesignAdd({ onClose, item }: ModalProps) {
 
                     {/* Content */}
                     <div className="flex-1 overflow-auto p-6">
-                        {loading ? (
-                            <div className="flex items-center justify-center h-full">
-                                <div className="text-center">
-                                    <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-                                    <p className="text-gray-500">Đang tải designs...</p>
-                                </div>
-                            </div>
-                        ) : filteredDesigns.length === 0 ? (
-                            <div className="flex items-center justify-center h-full">
-                                <div className="text-center">
-                                    <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">Không tìm thấy design</h3>
-                                    <p className="text-gray-500">
-                                        {searchTerm ? 'Thử tìm kiếm với từ khóa khác' : 'Chưa có design nào được tạo'}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            /* List View */
+                        <LoadMoreWrapper loadMore={loadMore} hasMore={hasMore} loader={(<LoadingIndicator />)} rootMargin="300px">
                             <div className="space-y-4">
-                                {filteredDesigns.map((design) => (
+                                {designs.map((design) => (
                                     <div
                                         key={design.id}
-                                        className={`group bg-white rounded-xl border-2 p-6 transition-all duration-300 cursor-pointer hover:shadow-lg ${
-                                            selectedDesign?.id === design.id 
-                                                ? 'border-purple-500 shadow-lg' 
-                                                : 'border-gray-200 hover:border-purple-300'
-                                        }`}
+                                        className={`group bg-white rounded-xl border-2 p-6 transition-all duration-300 cursor-pointer hover:shadow-lg ${selectedDesign?.id === design.id
+                                            ? 'border-purple-500 shadow-lg'
+                                            : 'border-gray-200 hover:border-purple-300'
+                                            }`}
                                         onClick={() => handleDesignSelect(design)}
                                     >
                                         <div className="flex gap-6">
                                             {/* Thumbnail */}
-                                             <ThumbPreview
+                                            <ThumbPreview
                                                 thumbUrl={design.thumbnail || ""}
                                                 size={100}
                                             />
@@ -168,7 +183,7 @@ export default function ModalDesignAdd({ onClose, item }: ModalProps) {
                                             <div className="flex-1 min-w-0">
                                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{design.name}</h3>
                                                 <p className="text-sm text-gray-500 mb-3">ID: {design.id}</p>
-                                                
+
                                                 {/* Design Images */}
                                                 <div className="flex flex-wrap gap-2">
                                                     {getDesignImages(design).map((img, idx) => (
@@ -186,7 +201,7 @@ export default function ModalDesignAdd({ onClose, item }: ModalProps) {
                                     </div>
                                 ))}
                             </div>
-                        )}
+                        </LoadMoreWrapper>
                     </div>
 
                     {/* Footer */}
@@ -215,6 +230,7 @@ export default function ModalDesignAdd({ onClose, item }: ModalProps) {
                         </div>
                     )}
                 </div>
+                <LoadingOverlay show={loading} />
             </div>
         </>
     );

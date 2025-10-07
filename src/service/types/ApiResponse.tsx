@@ -120,6 +120,7 @@ export interface Settlement {
 export interface Order {
   id: string;
   label : string | null;
+  origin_print_status : string | null;
   tracking_number: string;
   shop_name?: string;
   shop_id?: string;

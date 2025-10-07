@@ -9,6 +9,10 @@ import { changePrinterStatus, changePrinterStatusBatch, updatePrinterOrder, upda
 import { PrintShippMethod } from "@/service/types/PrintOrder";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
 import { SKUMPK } from "@/service/print-order/data";
+import { set } from 'lodash';
+import InputAlert, { showInputAlert } from "./InputAlert";
+import { synchronizePrintOrder } from './../../../../../service/print-order/print-order-service';
+import { SynchronizePrintOrderParam } from '@/service/print-order/print-order-service';
 
 export type OrderWithFlag = Order & { _isRemoving?: boolean };
 
@@ -43,6 +47,7 @@ export const optionsChangeStatus: Option[] =
         { label: "In thất bại", value: "PRINT_REQUEST_FAIL", hidden: true },
         { label: "Hủy In", value: "PRINT_CANCEL", hidden: true },
         { label: "Đã đặt in", value: "PRINT_REQUEST_SUCCESS", hidden: true },
+        { label: "Tự đặt in", value: "USER_PRINT" },
     ]
 export default function TablOrderPrint({
     orderList,
@@ -172,6 +177,18 @@ export default function TablOrderPrint({
                 alert("Lỗi khi cập nhật máy in");
                 throw new Error("Lỗi khi cập nhật máy in")
             }
+
+            if(status === "USER_PRINT"){
+                const value = await showInputAlert({
+                    title: "Nhập order fulfill",
+                    placeholder: "",
+                });
+                if(!value) {
+                    return;
+                }
+                await synchronizePrintOrder({orderId: order.id, orderFulfill: value});
+            }
+
             setLoadingOverLay(true)
             const response = await changePrinterStatus(order.id, status);
             const newOrder = response.result;

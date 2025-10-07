@@ -196,7 +196,7 @@ export default function PrintOrderPage() {
   }
   const loadOrderSuccess = async (pageInput = 0, append = false) => {
     try {
-      const responsePringting = await getOrderCantPrint({ printStatus: ["PRINT_REQUEST_SUCCESS", "PRINT_CANCEL"], page: pageInput });
+      const responsePringting = await getOrderCantPrint({ printStatus: ["PRINT_REQUEST_SUCCESS", "PRINT_CANCEL", "USER_PRINT"], page: pageInput });
       const newOrders: Order[] = responsePringting.result.data;
       if (!append) {
         setOrderSuccessList(newOrders)
@@ -282,7 +282,7 @@ export default function PrintOrderPage() {
           upsertOrderAwait(newOrder);
         } else if (newOrder.print_status === "PRINTED") {
           upsertOrderPrinting(newOrder);
-        } else if(newOrder.print_status === "PRINT_REQUEST_SUCCESS" || newOrder.print_status === "PRINT_CANCEL"){
+        } else if(newOrder.print_status === "PRINT_REQUEST_SUCCESS" || newOrder.print_status === "PRINT_CANCEL" || newOrder.print_status === "USER_PRINT") {
           upsertOrderSuccess(newOrder)
         } else if (newOrder.print_status === "PRINT_REQUEST") {
           upsertOrderPrintRequest(newOrder);

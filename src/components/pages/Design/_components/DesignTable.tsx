@@ -3,7 +3,7 @@ import { Search, Trash, Plus, Grid, List } from "lucide-react";
 import { Design } from "@/service/types/ApiResponse";
 import DesignView from "../_components/DesignView";
 import ThumbPreview from "./ThumbPreview";
-import { useCallback, useRef, useEffect, useState } from "react";
+import { useCallback, useRef, useEffect, useState, useMemo } from "react";
 import React from "react";
 import { useDesignsCursor } from "@/lib/customHooks/useDesginsCursor";
 import LoadMoreWrapper from "@/components/UI/LoadMordeWrapper";
@@ -11,100 +11,164 @@ import LoadingIndicator from "@/components/UI/LoadingIndicator";
 import EmptyState from "@/components/UI/EmptyState";
 import DesignCard from "@/components/UI/DesignCard";
 import { debounce } from "lodash";
+import DesignModal, { DesignRequest } from "./AddDesign";
+import { createDesign, deleteDesign } from "@/service/design/design-service";
 
 interface Props {
-  designSearch: string;
-  setDesignSearch: (val: string) => void;
   selectedDesign: string;
   setSelectedDesign: (val: string) => void;
-  handleDeleteDesign: (id: string) => void;
-  setOpen: (val: boolean) => void;
 }
 
 type ViewMode = "table" | "grid";
 
-function DesignTableBase({
-  designSearch,
-  setDesignSearch,
-  selectedDesign,
-  setSelectedDesign,
-  handleDeleteDesign,
-  setOpen,
-}: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [isLoading, setIsLoading] = useState(false);
+function DesignTableBase({ selectedDesign, setSelectedDesign }: Props) {
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Local search input state
-  const [search, setSearch] = useState<string>(designSearch || "");
+  const [search, setSearch] = useState<string>("");
+  const [open, setOpen] = useState(false);
 
-  // Data state
-  const [designs, setDesigns] = useState<Design[]>([]);
-  const [pageToken, setPageToken] = useState<string>("");
-  const [fetchCursor, setFetchCursor] = useState<string>("");
-  const [hasMore, setHasMore] = useState(true);
-  const [total, setTotal] = useState<number>(0);
-
-  // Hook fetch designs
-  const { data: designCursorResponse } = useDesignsCursor({
-    search,
-    cursor: fetchCursor,
+  const [designsData, setDesignsData] = useState<{
+    designs: Design[];
+    pageToken: string;
+    hasMore: boolean;
+    total: number;
+  }>({
+    designs: [],
+    pageToken: "",
+    hasMore: false,
+    total: 0,
   });
 
-  // Debounced update of parent search
+  const [fetchCursor, setFetchCursor] = useState({
+    cursor: "",
+    search: "",
+  });
+
+  // Hook fetch designs
+  const { data: designCursorResponse, isLoading} = useDesignsCursor({
+    search: fetchCursor.search,
+    cursor: fetchCursor.cursor,
+  });
+
+  // Hàm xử lý reset + fetch mới khi search thay đổi
+  const handlePrevSearch = useCallback((value: string) => {
+    setDesignsData({ designs: [], pageToken: "", hasMore: true, total: 0 });
+    setFetchCursor({ cursor: "", search: value });
+  }, []);
+
+  // debounce để tránh gọi API liên tục
   const debouncedSetSearch = useRef(
-    debounce((value: string) => {
-      setDesignSearch(value);
-    }, 500)
+    debounce((value: string) => handlePrevSearch(value), 500)
   ).current;
 
-  // Handle input change
+  // cleanup debounce khi unmount
+  useEffect(() => {
+    return () => {
+      debouncedSetSearch.cancel();
+    };
+  }, [debouncedSetSearch]);
+
+  // Xử lý input search
   const onChangeSearch = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
-      setSearch(value); // update local input
-      debouncedSetSearch(value); // debounce update parent
+      setSearch(value);
+      debouncedSetSearch(value);
     },
     [debouncedSetSearch]
   );
 
-  // Reset designs + cursor khi search thay đổi
-  useEffect(() => {
-    setDesigns([]);
-    setPageToken("");
-    setFetchCursor("");
-  }, [search]);
-
-  // Khi hook trả về dữ liệu → append
+  // ⚡ FIX: cập nhật data tránh duplicate
   useEffect(() => {
     if (!designCursorResponse?.result?.data) return;
 
-    setDesigns((prev) => [...prev, ...designCursorResponse.result.data]);
-    setPageToken(designCursorResponse.result.nextCursor || "");
-    setHasMore(!!designCursorResponse.result.hasMore);
-    setTotal(designCursorResponse.result.total);
-  }, [designCursorResponse]);
+    const incoming = designCursorResponse.result.data;
+    const nextCursor = designCursorResponse.result.nextCursor || "";
+    const total = designCursorResponse.result.total ?? 0;
+    const hasMore = !!designCursorResponse.result.hasMore;
 
-  // Select / delete / add design
+    setDesignsData((prev) => {
+      // Nếu là trang đầu (cursor rỗng) → replace
+      if (!fetchCursor.cursor) {
+        return {
+          designs: incoming,
+          pageToken: nextCursor,
+          hasMore,
+          total,
+        };
+      }
+
+      // Nếu là load more → append có lọc trùng
+      const existingIds = new Set(prev.designs.map((d) => d.id));
+      const newUnique = incoming.filter((d) => !existingIds.has(d.id));
+
+      return {
+        designs: [...prev.designs, ...newUnique],
+        pageToken: nextCursor,
+        hasMore,
+        total,
+      };
+    });
+  }, [designCursorResponse, fetchCursor.cursor]);
+
+  // select design
   const onSelectDesign = useCallback(
     (id: string) => setSelectedDesign(id),
     [setSelectedDesign]
   );
-  const onDelete = useCallback(
-    (id: string) => handleDeleteDesign(id),
-    [handleDeleteDesign]
-  );
   const openAdd = useCallback(() => setOpen(true), [setOpen]);
 
-  // Load more
-  const loadMore = () => {
-    if (!pageToken) return;
-    setFetchCursor(pageToken);
+  // ⚡ FIX: loadMore dùng functional update tránh stale closure
+  const loadMore = useCallback(() => {
+    if (!designsData.pageToken) return;
+    setFetchCursor((prev) => ({ ...prev, cursor: designsData.pageToken }));
+  }, [designsData.pageToken]);
+
+  const hasSearch = useMemo(() => search.length > 0, [search]);
+  const hasResults = useMemo(
+    () => designsData.designs.length > 0,
+    [designsData.designs.length]
+  );
+
+  const handleSubmitDesign = async (data: DesignRequest) => {
+    try {
+      const response = await createDesign(data);
+      const newDesgin = response.result;
+      setDesignsData({
+        ...designsData, // giữ nguyên status, message cũ
+        designs: [newDesgin, ...designsData?.designs || []],
+        total: designsData.total + 1,
+      });
+      alert("Thêm design thành công!");
+    } catch (error) {
+      console.error(error);
+      alert("Có lỗi khi thêm design: " + error);
+    }
   };
 
-  const hasSearch = search.length > 0;
-  const hasResults = designs.length > 0;
-
+  const handleDeleteDesign = async (designId: string) => {
+    const designName = designsData.designs.find(d => d.id === designId)?.name || 'design này';
+    if (!confirm(`Bạn có chắc muốn xóa "${designName}"?`)) return;
+    try {
+      const response = await deleteDesign(designId);
+      if (response.code === 1000) {
+        alert("Xóa design thành công");
+    
+        setDesignsData({
+          ...designsData, // giữ nguyên status, message cũ
+          designs: designsData.designs.filter(item => item.id !== designId),
+          total: designsData.total -1,
+        });
+        if (selectedDesign === designId) {
+          setSelectedDesign("");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Có lỗi khi xóa design: " + error);
+    }
+  };
   return (
     <div className="bg-white flex flex-col shadow-sm border border-gray-200 h-full relative">
       {/* Header */}
@@ -131,7 +195,7 @@ function DesignTableBase({
           {/* Controls */}
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500 whitespace-nowrap">
-              {designs.length} / {total} designs
+              {designsData.designs.length} / {designsData.total} designs
             </span>
 
             {/* View mode toggle */}
@@ -172,21 +236,22 @@ function DesignTableBase({
       {/* Content */}
       <div className="flex-1 min-h-0 p-2 overflow-auto">
         <LoadMoreWrapper
-          hasMore={hasMore}
+          hasMore={designsData.hasMore}
           loadMore={loadMore}
           loader={<LoadingIndicator />}
+          loading={isLoading}
         >
           {!hasResults ? (
             <EmptyState hasSearch={hasSearch} onAddClick={openAdd} />
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-              {designs.map((design) => (
+              {designsData.designs.map((design) => (
                 <DesignCard
                   key={design.id}
                   design={design}
                   isSelected={selectedDesign === design.id}
                   onSelect={onSelectDesign}
-                  onDelete={onDelete}
+                  onDelete={handleDeleteDesign}
                 />
               ))}
             </div>
@@ -194,7 +259,7 @@ function DesignTableBase({
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px]">
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {designs.map((design) => (
+                  {designsData.designs.map((design) => (
                     <tr
                       key={design.id}
                       className={`hover:bg-gray-50 transition-colors ${
@@ -222,13 +287,15 @@ function DesignTableBase({
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="font-medium text-gray-900">{design.name}</div>
+                        <div className="font-medium text-gray-900">
+                          {design.name}
+                        </div>
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
                           <DesignView design={design} />
                           <button
-                            onClick={() => onDelete(design.id)}
+                            onClick={() => handleDeleteDesign(design.id)}
                             className="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                           >
                             <Trash className="w-4 h-4 mr-1" /> Xóa
@@ -243,8 +310,13 @@ function DesignTableBase({
           )}
         </LoadMoreWrapper>
       </div>
+      <DesignModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onSubmit={handleSubmitDesign}
+      />
     </div>
   );
 }
 
-export default React.memo(DesignTableBase);
+export default DesignTableBase;

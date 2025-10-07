@@ -1,5 +1,4 @@
-"use client";
-
+import { useMemo } from "react";
 import useSWR, { mutate } from "swr";
 
 interface UseFetchOptions<T, P = any> {
@@ -19,21 +18,26 @@ export function useFetch<T = any, P = any>({
   revalidateOnReconnect = true,
   refreshInterval,
 }: UseFetchOptions<T, P>) {
-  const { data, error, isLoading, mutate: swrMutate } = useSWR<T>(
-    [key, param],
-    () => fetcher(param),
-    {
-      revalidateOnFocus,
-      revalidateOnReconnect,
-      refreshInterval,
-    }
-  );
+  const swrKey = useMemo(() => {
+    return param ? [key, JSON.stringify(param)] : key;
+  }, [key, param]);
+
+  const {
+    data,
+    error,
+    isLoading,
+    mutate: swrMutate,
+  } = useSWR<T>(swrKey, () => fetcher(param), {
+    revalidateOnFocus,
+    revalidateOnReconnect,
+    refreshInterval,
+  });
 
   return {
     data,
     error,
     isLoading,
     refresh: () => swrMutate(),
-    updateCache: (newData: T) => mutate([key, param], newData, false),
+    updateCache: (newData: T) => mutate(swrKey, newData, false),
   };
 }
