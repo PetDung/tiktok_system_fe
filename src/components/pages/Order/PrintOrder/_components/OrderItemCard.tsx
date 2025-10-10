@@ -116,7 +116,7 @@ export default function OrderItemCard({
 
         }
         return [];
-    }, [attribute, optionSelect, skuMenPrint]);
+    }, [attribute, optionSelect.color, skuMenPrint]);
 
 
     const sku: string | null = useMemo(() => {
@@ -154,7 +154,7 @@ export default function OrderItemCard({
             return matchedCategory.sku;
         }
         return null;
-    }, [attribute, optionSelect]);
+    }, [attribute, optionSelect.size, optionSelect.color]);
 
     const skuOption = useMemo(() => {
         const lineItem = item.lineItemFist;
@@ -169,7 +169,7 @@ export default function OrderItemCard({
 
 
     useEffect(() => {
-        if (!sku) return;
+        if (!sku) {return;};
 
         const printSku: PrintSkuRequest = {
             skuCode: sku,
@@ -191,7 +191,7 @@ export default function OrderItemCard({
             }
         };
         updateSku();
-    }, [sku, optionSelect]);
+    }, [optionSelect]);
 
     const clear = async (id: string[]) => {
         try {
@@ -286,7 +286,7 @@ export default function OrderItemCard({
                                         list={`type-options-${item.lineItemFist.id}`}
                                         value={optionSelect.type}
                                         onChange={(e) =>
-                                            setOptionSelect({ type: e.target.value, color: "", size: "" })
+                                            setOptionSelect({ ...optionSelect, type: e.target.value, color: "", size: ""})
                                         }
                                         disabled={disabledSelect}
                                         className="px-3 min-w-[120px] max-w-[200px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -339,7 +339,7 @@ export default function OrderItemCard({
                                     </datalist>
                                 </div>
                             </div>
-                            {attribute.code === "MP" && (
+                            {/* {attribute.code === "MP"  && (
                                 <div className="flex items-center gap-3 justify-start text-sm">
                                    {item.lineItemFist.design?.front &&  <label className="flex items-center gap-2">
                                         <span className="text-gray-700">Trước:</span>
@@ -368,7 +368,7 @@ export default function OrderItemCard({
                                     </label>}
 
                                 </div>
-                            )}
+                            )} */}
                         </div>
 
 
