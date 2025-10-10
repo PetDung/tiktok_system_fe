@@ -5,14 +5,13 @@ import { AttributeFull } from "./TablOrderPrint";
 import { useEffect, useMemo, useState } from "react";
 import { CategoryPrintPrinteesHub, getSkuMenPrint, MenPrintSku, Variation } from "@/service/print-order/getSKU";
 import { updateIsPrinter, updatePrinterSku } from "@/service/order/order-service";
-import { Design, LineItem } from "@/service/types/ApiResponse";
-import { X, Printer } from "lucide-react";
+import { LineItem } from "@/service/types/ApiResponse";
+import {Printer } from "lucide-react";
 import { clearDesignInItem } from "@/service/design/design-service";
 import { PrintSkuRequest } from "@/service/types/PrintOrder";
 import { useFetch } from "@/lib/useFetch";
 import { SKUMPK, ValueMKP } from "@/service/print-order/data";
 import DesignPreview from "./DesignPreview";
-import { on } from 'events';
 
 export type OptionSelect = {
     type: string;
