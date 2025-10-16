@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Eye, X } from "lucide-react";
 import { Img } from "react-image";
+import { FastAverageColor } from 'fast-average-color';
 
 export type ThumbPreviewProps = {
   thumbUrl: string;
@@ -16,9 +17,24 @@ export default function ThumbPreview({
   alt = "",
 }: ThumbPreviewProps) {
   const [open, setOpen] = useState(false);
+  const [bgColor, setBgColor] = useState("#d1d5db"); // default gray-300
   const modalRef = useRef<HTMLDivElement | null>(null);
 
   const largeUrl = fullImageUrl || thumbUrl;
+
+  // Tính màu nền dựa trên ảnh
+  useEffect(() => {
+    const fac = new FastAverageColor();
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = thumbUrl;
+
+    img.onload = () => {
+      const color = fac.getColor(img);
+      // Nếu ảnh tối -> nền sáng, nếu ảnh sáng -> nền tối
+      setBgColor(color.isDark ? "#ffffff" : "#222222");
+    };
+  }, [thumbUrl]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -42,14 +58,21 @@ export default function ThumbPreview({
   return (
     <>
       <div className="relative inline-block" style={{ width: size, height: size }}>
-        {/* gray background */}
-        <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+        {/* background tự động */}
+        <div
+          className="w-full h-full rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: bgColor }}
+        >
           <Img
             src={thumbUrl}
             alt={alt}
-            className="w-full h-full object-contain" // ✅ giữ tỉ lệ, không crop
+            className="w-full h-full object-contain"
             loader={<div className="w-full h-full bg-gray-200 animate-pulse" />}
-            unloader={<div className="w-full h-full bg-red-200 flex items-center justify-center">Not exist</div>}
+            unloader={
+              <div className="w-full h-full bg-red-200 flex items-center justify-center">
+                Not exist
+              </div>
+            }
           />
         </div>
 
@@ -65,19 +88,11 @@ export default function ThumbPreview({
         </button>
       </div>
 
-
       {/* Modal */}
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          role="dialog"
-          aria-modal="true"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
           {/* Overlay */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
 
           {/* Modal content */}
           <div
@@ -95,19 +110,18 @@ export default function ThumbPreview({
 
             {/* Caption */}
             {alt && (
-              <p className="mb-2 text-sm text-gray-700 max-w-[80vw] truncate">
-                {alt}
-              </p>
+              <p className="mb-2 text-sm text-gray-700 max-w-[80vw] truncate">{alt}</p>
             )}
 
             {/* Image */}
-            <div className="rounded-md overflow-hidden bg-gray-100 p-2 flex items-center justify-center">
+            <div
+              className="rounded-md overflow-hidden p-2 flex items-center justify-center"
+              style={{ backgroundColor: bgColor }}
+            >
               <Img
                 src={largeUrl}
                 alt={alt}
-                loader={
-                  <div className="w-[80vw] h-[80vh] bg-gray-200 animate-pulse" />
-                }
+                loader={<div className="w-[80vw] h-[80vh] bg-gray-200 animate-pulse" />}
                 unloader={
                   <div className="w-[80vw] h-[80vh] bg-red-200 flex items-center justify-center">
                     Not exist
@@ -119,7 +133,6 @@ export default function ThumbPreview({
           </div>
         </div>
       )}
-
     </>
   );
 }
