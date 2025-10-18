@@ -1,7 +1,8 @@
 import { useEffect, useCallback } from 'react';
 import { useWebSocket } from '@/Context/WebSocketContext';
 import { IMessage } from '@stomp/stompjs';
-import { Message, Order } from '@/service/types/ApiResponse';
+import { Order } from '@/service/types/ApiResponse';
+import { Message } from '@/service/types/websocketMessageType';
 
 interface OrderTabActions {
   upsertOrder: (newOrder: Order) => void;
