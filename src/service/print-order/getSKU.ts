@@ -37,6 +37,46 @@ export interface MenPrintSku {
   color: string;
 }
 
+export interface MangoTeePrintSKU {
+  id: string;
+  sku: string
+  size: string;
+  color: string;
+}
+export interface MangoTeePrintProduct {
+  id: string;
+  sku: string
+  name: string;
+  images: string[];
+}
+
+export interface MangoTeeData<T> {
+  status : boolean;
+  code: string;
+  message: string;
+  data: T;
+} 
+
+export interface MangoTeeProducts {
+  items: MangoTeePrintProduct[];
+  pagination: {
+    limit: number,
+    pages: number,
+    total: number
+    page: number
+  }
+}
+export interface MangoTeeVariations {
+  product_id: string;
+  product_name: string;
+  items: MangoTeePrintSKU[];
+  pagination: {
+    limit: number,
+    pages: number,
+    total: number
+    page: number
+  }
+}
 
 
 export const getVariationsPrinteesHub = async (): Promise<CategoryPrintPrinteesHub[]> => {
@@ -94,6 +134,8 @@ export const getVariationsMenPrint = async (): Promise<MenPrintData<ProductMenPr
     };
   }
 };
+
+
 export const getSkuMenPrint = async (prouduct_code: string): Promise<MenPrintSku[]> => {
   try {
     let page = 1;
@@ -129,4 +171,73 @@ export const getSkuMenPrint = async (prouduct_code: string): Promise<MenPrintSku
 
 export const fetchSkuMKP = async (): Promise<SKUMPK[]> => {
   return Promise.resolve(dataMKP as SKUMPK[]);
+};
+
+
+
+/// mango tee prints
+
+export const getMangoTeeProduct = async (): Promise<MangoTeePrintProduct[]> => {
+  try {
+    let page = 1;
+    let allData: MangoTeePrintProduct[] = [];
+
+    while (true) {
+      const res = await fetch(`/api/variations/mangoteeprints?page=${page}`);
+      if (!res.ok) throw new Error("Failed to fetch variations");
+
+      const data: MangoTeeData<MangoTeeProducts> = await res.json();
+
+      allData = [...allData, ...data.data.items];
+
+      // nếu đã lấy đủ (vd: count <= page * limit) thì dừng
+      if (allData.length = data.data.pagination.total) {
+        break;
+      }
+
+      page++;
+    }
+    const uniqueMap = new Map<string, MangoTeePrintProduct>();
+    for (const item of allData) {
+      if (!uniqueMap.has(item.id)) {
+        uniqueMap.set(item.id, item);
+      }
+    }
+    
+    const uniqueData = Array.from(uniqueMap.values());
+
+    return uniqueData;
+
+  } catch (err: any) {
+    console.error("Error fetching variations:", err.message);
+    return []
+  }
+};
+
+export const getSkuMongoTeePrint = async (prouduct_id: string): Promise<MangoTeePrintSKU[]> => {
+  try {
+    let page = 1;
+    let allData: MangoTeePrintSKU[] = []
+
+    while (true) {
+      const res = await fetch(`/api/variations/mangoteeprints/sku?page=${page}&product_id=${prouduct_id}`);
+      if (!res.ok) throw new Error("Failed to fetch sku variations");
+
+      const data: MangoTeeData<MangoTeeVariations> = await res.json();
+      if(!data.data) break;
+
+      allData = [...allData, ...data.data.items];
+
+      // nếu đã hết trang thì dừng
+      if (allData.length = data.data.pagination.total) {
+        break;
+      }
+
+      page++;
+    }
+    return allData
+  } catch (err: any) {
+    console.error("Error fetching sku variations:", err.message);
+    return []
+  }
 };

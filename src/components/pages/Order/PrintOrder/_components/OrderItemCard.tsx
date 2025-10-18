@@ -2,8 +2,8 @@
 import ThumbPreview from "@/components/pages/Design/_components/ThumbPreview";
 import { LineItemHasQuantity } from "./OrderItemModalView";
 import { AttributeFull } from "./TablOrderPrint";
-import { useEffect, useMemo, useState } from "react";
-import { CategoryPrintPrinteesHub, getSkuMenPrint, MenPrintSku, Variation } from "@/service/print-order/getSKU";
+import { useEffect, useMemo, useState, memo, useCallback } from "react";
+import { CategoryPrintPrinteesHub, getSkuMenPrint, getSkuMongoTeePrint, MangoTeePrintSKU, MenPrintSku, Variation } from "@/service/print-order/getSKU";
 import { updateIsPrinter, updatePrinterSku } from "@/service/order/order-service";
 import { LineItem } from "@/service/types/ApiResponse";
 import {Printer } from "lucide-react";
@@ -21,7 +21,7 @@ export type OptionSelect = {
     value4: null | string;
 };
 
-export default function OrderItemCard({
+const OrderItemCard = memo(function OrderItemCard({
     item,
     attribute,
     openAddDesign,
@@ -41,178 +41,233 @@ export default function OrderItemCard({
     });
     const [isPrintEnabled, setIsPrintEnabled] = useState<boolean | null>(item.lineItemFist.is_print);
 
+    // Fetch SKU data based on selected type
     const { data: skuMenPrintRs, isLoading: loadingColors } = useFetch<MenPrintSku[]>({
         fetcher: getSkuMenPrint,
-        key: "men-print-sku",
-        param: optionSelect.type
+        key: `men-print-sku-${optionSelect.type}`,
+        param: optionSelect.type,
+        enabled: !!optionSelect.type && attribute?.code === "MP"
     });
 
-    const skuMenPrint = skuMenPrintRs ? skuMenPrintRs : [];
+    const { data: skuMangoTeePrintRs, isLoading: isLoadingColorMango } = useFetch<MangoTeePrintSKU[]>({
+        fetcher: getSkuMongoTeePrint,
+        key: `mango-print-sku-${optionSelect.type}`,
+        param: optionSelect.type,
+        enabled: !!optionSelect.type && attribute?.code === "MG"
+    });
+
+    const skuMenPrint = skuMenPrintRs || [];
+    const skuMango = skuMangoTeePrintRs || [];
 
     /** Lấy danh sách màu dựa vào type đã chọn */
     const colors: string[] = useMemo(() => {
         if (!attribute || !optionSelect.type) return [];
-        if (attribute.code === "PRH") {
-            const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
-            const matched = orderOrigin.find((o) => o.name === optionSelect.type);
-            if (!matched) return [];
-            return Array.from(new Set(matched.variations.map((v: Variation) => v.color)));
+        
+        switch (attribute.code) {
+            case "PRH": {
+                const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
+                const matched = orderOrigin.find((o) => o.name === optionSelect.type);
+                if (!matched) return [];
+                return Array.from(new Set(matched.variations.map((v: Variation) => v.color)));
+            }
+            case "MP": {
+                return Array.from(new Set(skuMenPrint.map(item => item.color)));
+            }
+            case "MG": {
+                return Array.from(new Set(skuMango.map(item => item.color)));
+            }
+            case "MKP": {
+                const orderOrigin = attribute.orderOrigin as SKUMPK[];
+                const matched = orderOrigin.find((o) => o.sku === optionSelect.type);
+                if (!matched) return [];
+                return Array.from(new Set(matched.varriants.map(item => item.color)));
+            }
+            default:
+                return [];
         }
-        if (attribute.code === "MP") {
-            return Array.from(new Set(skuMenPrint.map(item => item.color)));
-
-        }
-        if (attribute.code === "MKP") {
-            const orderOrigin = attribute.orderOrigin as SKUMPK[];
-            const matched = orderOrigin.find((o) => o.sku === optionSelect.type);
-            if (!matched) return [];
-            return Array.from(new Set(matched.varriants.map(item => item.color)));
-
-        }
-        return []
-    }, [attribute, optionSelect.type, skuMenPrint]);
+    }, [attribute, optionSelect.type, skuMenPrint, skuMango]);
 
     /** Lấy danh sách size dựa vào type + color đã chọn */
     const sizes: string[] = useMemo(() => {
-        if (
-            !attribute ||
-            !optionSelect.type ||
-            !optionSelect.color
-        )
-            return [];
-        if (attribute.code === "PRH") {
-            const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
-            const matched = orderOrigin.find((o) => o.name === optionSelect.type);
-            if (!matched) return [];
-            return Array.from(
-                new Set(
-                    matched.variations
-                        .filter((v: Variation) => v.color === optionSelect.color)
-                        .map((v: Variation) => v.size)
-                )
-            );
-
+        if (!attribute || !optionSelect.type || !optionSelect.color) return [];
+        
+        switch (attribute.code) {
+            case "PRH": {
+                const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
+                const matched = orderOrigin.find((o) => o.name === optionSelect.type);
+                if (!matched) return [];
+                return Array.from(
+                    new Set(
+                        matched.variations
+                            .filter((v: Variation) => v.color === optionSelect.color)
+                            .map((v: Variation) => v.size)
+                    )
+                );
+            }
+            case "MP": {
+                return Array.from(
+                    new Set(
+                        skuMenPrint
+                            .filter((v: MenPrintSku) => v.color === optionSelect.color)
+                            .map((v: MenPrintSku) => v.size)
+                    )
+                );
+            }
+            case "MG": {
+                return Array.from(
+                    new Set(
+                        skuMango
+                            .filter((v: MangoTeePrintSKU) => v.color === optionSelect.color)
+                            .map((v: MangoTeePrintSKU) => v.size)
+                    )
+                );
+            }
+            case "MKP": {
+                const orderOrigin = attribute.orderOrigin as SKUMPK[];
+                const matched = orderOrigin.find((o) => o.sku === optionSelect.type);
+                if (!matched) return [];
+                return Array.from(
+                    new Set(
+                        matched.varriants
+                            .filter((v: ValueMKP) => v.color === optionSelect.color)
+                            .map((v: ValueMKP) => v.size)
+                    )
+                );
+            }
+            default:
+                return [];
         }
-        if (attribute.code === "MP") {
-            return Array.from(
-                new Set(
-                    skuMenPrint
-                        .filter((v: Variation) => v.color === optionSelect.color)
-                        .map((v: Variation) => v.size)
-                )
-            );
-        }
-        if (attribute.code === "MKP") {
-            const orderOrigin = attribute.orderOrigin as SKUMPK[];
-            const matched = orderOrigin.find((o) => o.name === optionSelect.type);
-            if (!matched) return [];
-            return Array.from(
-                new Set(
-                    matched.varriants
-                        .filter((v: ValueMKP) => v.color === optionSelect.color)
-                        .map((v: ValueMKP) => v.size)
-                )
-            );
-
-        }
-        return [];
-    }, [attribute, optionSelect.color, skuMenPrint]);
-
+    }, [attribute, optionSelect.type, optionSelect.color, skuMenPrint, skuMango]);
 
     const sku: string | null = useMemo(() => {
         if (!attribute || !optionSelect.type || !optionSelect.color || !optionSelect.size) {
             return null;
         }
-        if (attribute.code === "PRH") {
-            const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
-            const matchedCategory = orderOrigin.find(
-                (cat) => cat.name === optionSelect.type
-            );
-            if (!matchedCategory) return null;
+        
+        switch (attribute.code) {
+            case "PRH": {
+                const orderOrigin = attribute.orderOrigin as CategoryPrintPrinteesHub[];
+                const matchedCategory = orderOrigin.find((cat) => cat.name === optionSelect.type);
+                if (!matchedCategory) return null;
 
-            const matchedVariation = matchedCategory.variations.find(
-                (v) =>
-                    v.color === optionSelect.color &&
-                    v.size === optionSelect.size
-            );
-            return matchedVariation ? matchedVariation.sku : null;
+                const matchedVariation = matchedCategory.variations.find(
+                    (v) => v.color === optionSelect.color && v.size === optionSelect.size
+                );
+                return matchedVariation ? matchedVariation.sku : null;
+            }
+            case "MP": {
+                if(skuMenPrint.length === 0) return null;
+                const matchedVariation = skuMenPrint
+                    .filter(v => v && v.color && v.size) // Filter out undefined/null items
+                    .find(
+                        (v) => v.color === optionSelect.color && v.size === optionSelect.size
+                    );
+                return matchedVariation ? matchedVariation.sku : null;
+            }
+            case "MG": {
+                if(skuMango.length === 0) return null;
+                const matchedVariation = skuMango
+                    .filter(v => v && v.color && v.size) // Filter out undefined/null items
+                    .find(
+                        (v) => v.color === optionSelect.color && v.size === optionSelect.size
+                    );
+                return matchedVariation ? matchedVariation.sku : null;
+            }
+            case "MKP": {
+                const orderOrigin = attribute.orderOrigin as SKUMPK[];
+                const matchedCategory = orderOrigin.find((cat) => cat.sku === optionSelect.type);
+                if (!matchedCategory) return null;
+                return matchedCategory.sku;
+            }
+            default:
+                return null;
         }
-        if (attribute.code === "MP") {
-            const matchedVariation = skuMenPrint.find(
-                (v) =>
-                    v.color === optionSelect.color &&
-                    v.size === optionSelect.size
-            );
-            return matchedVariation ? matchedVariation.sku : null;
-        }
-        if (attribute.code === "MKP") {
-            const orderOrigin = attribute.orderOrigin as SKUMPK[];
-            const matchedCategory = orderOrigin.find(
-                (cat) => cat.sku === optionSelect.type
-            );
-            if (!matchedCategory) return null;
-            return matchedCategory.sku;
-        }
-        return null;
-    }, [attribute, optionSelect.size, optionSelect.color]);
+    }, [attribute, optionSelect.type, optionSelect.color, optionSelect.size, skuMenPrint, skuMango]);
 
     const skuOption = useMemo(() => {
         const lineItem = item.lineItemFist;
+        if (!lineItem.print_sku) return "Chưa có";
+        return `${lineItem.print_sku.type} - ${lineItem.print_sku.value1} - ${lineItem.print_sku.value2}`;
+    }, [item.lineItemFist]);
 
-        if (!lineItem.print_sku) return "Chưa có"
-
-        return `${lineItem.print_sku.type} 
-                -${lineItem.print_sku.value1}
-                -${lineItem.print_sku.value2}
-                `
-    }, [item])
-
-
+    // Debounced SKU update to prevent excessive API calls
     useEffect(() => {
-        if (!sku) {return;};
+        if (!sku || !isPrintEnabled) return;
 
-        const printSku: PrintSkuRequest = {
-            skuCode: sku,
-            value1: optionSelect.color,
-            value2: optionSelect.size,
-            value3: optionSelect.value3,
-            value4: optionSelect.value4,
-            type: optionSelect.type
-        }
-        console.log("🛒 New SKU to update:", printSku);
-        const updateSku = async () => {
-            try {
-                const ids = item.lineItems.map(item => item.id)
-                await updatePrinterSku(ids, printSku)
-                console.log("✅ SKU updated:", sku);
-            } catch (err) {
-                console.log(err)
-                alert("❌ Update SKU failed");
-            }
-        };
-        updateSku();
-    }, [optionSelect]);
+        const timeoutId = setTimeout(() => {
+            const printSku: PrintSkuRequest = {
+                skuCode: sku,
+                value1: optionSelect.color,
+                value2: optionSelect.size,
+                value3: optionSelect.value3,
+                value4: optionSelect.value4,
+                type: optionSelect.type
+            };
 
-    const clear = async (id: string[]) => {
+            console.log(printSku);
+
+            const updateSku = async () => {
+                try {
+                    const ids = item.lineItems.map(item => item.id);
+                    await updatePrinterSku(ids, printSku);
+                    console.log("✅ SKU updated:", sku);
+                } catch (err) {
+                    console.error("❌ Update SKU failed:", err);
+                    alert("❌ Update SKU failed");
+                }
+            };
+            updateSku();
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timeoutId);
+    }, [sku, optionSelect, isPrintEnabled, item.lineItems]);
+
+    const clear = useCallback(async (id: string[]) => {
         try {
             await clearDesignInItem(id);
         } catch (e: any) {
-            console.error("Lỗi fetch SKU:", e.message);
-            alert("Lỗi!");
+            console.error("Lỗi clear design:", e.message);
+            alert("Lỗi khi xóa thiết kế!");
         }
-    }
+    }, []);
 
-    const changeIsPrint = async (isPrint: boolean) => {
+    const changeIsPrint = useCallback(async (isPrint: boolean) => {
         try {
-            setIsPrintEnabled(isPrint)
-            const ids = item.lineItems.map(item => item.id)
-            await updateIsPrinter(ids, isPrint)
+            setIsPrintEnabled(isPrint);
+            const ids = item.lineItems.map(item => item.id);
+            await updateIsPrinter(ids, isPrint);
         } catch (err) {
-            console.log(err)
-            setIsPrintEnabled(!isPrint)
-            alert("❌ Update SKU failed");
+            console.error("❌ Update print status failed:", err);
+            setIsPrintEnabled(!isPrint); // Revert on error
+            alert("❌ Update print status failed");
         }
-    }
+    }, [item.lineItems]);
+
+    const handleTypeChange = useCallback((newType: string) => {
+        setOptionSelect(prev => ({ 
+            ...prev, 
+            type: newType, 
+            color: "", 
+            size: "" 
+        }));
+    }, []);
+
+    const handleColorChange = useCallback((newColor: string) => {
+        setOptionSelect(prev => ({ 
+            ...prev, 
+            color: newColor, 
+            size: "" 
+        }));
+    }, []);
+
+    const handleSizeChange = useCallback((newSize: string) => {
+        setOptionSelect(prev => ({ 
+            ...prev, 
+            size: newSize 
+        }));
+    }, []);
+
+    const isLoading = loadingColors || isLoadingColorMango;
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-2 mb-2">
@@ -285,16 +340,14 @@ export default function OrderItemCard({
                                     <input
                                         list={`type-options-${item.lineItemFist.id}`}
                                         value={optionSelect.type}
-                                        onChange={(e) =>
-                                            setOptionSelect({ ...optionSelect, type: e.target.value, color: "", size: ""})
-                                        }
+                                        onChange={(e) => handleTypeChange(e.target.value)}
                                         disabled={disabledSelect}
                                         className="px-3 min-w-[120px] max-w-[200px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="-- Type --"
                                     />
                                     <datalist id={`type-options-${item.lineItemFist.id}`}>
                                         {attribute.attribute.map((t) => (
-                                            <option key={t.key} value={t.key}>
+                                            <option key={`${item.lineItemFist.id}-type-${t.key}`} value={t.key}>
                                                 {t.name}
                                             </option>
                                         ))}
@@ -306,16 +359,14 @@ export default function OrderItemCard({
                                     <input
                                         list={`color-options-${item.lineItemFist.id}`}
                                         value={optionSelect.color}
-                                        onChange={(e) =>
-                                            setOptionSelect({ ...optionSelect, color: e.target.value, size: "" })
-                                        }
+                                        onChange={(e) => handleColorChange(e.target.value)}
                                         disabled={!optionSelect.type || disabledSelect}
                                         className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder={loadingColors ? "Đang tải..." : "-- Color --"}
+                                        placeholder={isLoading ? "Đang tải..." : "-- Color --"}
                                     />
                                     <datalist id={`color-options-${item.lineItemFist.id}`}>
-                                        {colors.map((c) => (
-                                            <option key={c} value={c} />
+                                        {colors.map((c, index) => (
+                                            <option key={`${item.lineItemFist.id}-color-${c}-${index}`} value={c} />
                                         ))}
                                     </datalist>
                                 </div>
@@ -325,16 +376,14 @@ export default function OrderItemCard({
                                     <input
                                         list={`size-options-${item.lineItemFist.id}`}
                                         value={optionSelect.size}
-                                        onChange={(e) =>
-                                            setOptionSelect({ ...optionSelect, size: e.target.value })
-                                        }
+                                        onChange={(e) => handleSizeChange(e.target.value)}
                                         disabled={!optionSelect.color || disabledSelect}
                                         className="px-3 min-w-[120px] py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         placeholder="-- Size --"
                                     />
                                     <datalist id={`size-options-${item.lineItemFist.id}`}>
-                                        {sizes.map((s) => (
-                                            <option key={s} value={s} />
+                                        {sizes.map((s, index) => (
+                                            <option key={`${item.lineItemFist.id}-size-${s}-${index}`} value={s} />
                                         ))}
                                     </datalist>
                                 </div>
@@ -381,4 +430,6 @@ export default function OrderItemCard({
 
         </div>
     );
-}
+});
+
+export default OrderItemCard;

@@ -1,20 +1,11 @@
 "use client"
 import { Eye, History, Loader, PrinterCheck, SquareCheckBig } from "lucide-react";
-import { useEffect, useState } from "react";
-import ReviewPrint from "./_components/ReviewPrint";
-import AwaitDesign from "./_components/AwaitDesign";
-import Printing from "./_components/Printing";
-import { ApiResponse, Order, PrintShop } from "@/service/types/ApiResponse";
-import { useWebSocket } from "@/Context/WebSocketContext";
-import { IMessage } from "@stomp/stompjs";
-import { CategoryPrintPrinteesHub, fetchSkuMKP, getVariationsMenPrint, getVariationsPrinteesHub, MenPrintData, ProductMenPrint } from "@/service/print-order/getSKU";
-import { usePrinters } from "@/lib/customHooks/usePrinters";
-import { useFetch } from "@/lib/useFetch";
-import { getOrderCantPrint, getPrintShippingMethod } from "@/service/print-order/print-order-service";
-import { Message } from "@/service/types/websocketMessageType";
-import { PrintShippMethod } from "@/service/types/PrintOrder";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import OrderTab from "./_components/OrderTab";
 import PrintSucc from "./_components/PrintSuccess";
-import { SKUMPK } from "@/service/print-order/data";
+import { useOrderTab } from "@/lib/customHooks/useOrderTab";
+import { usePrintOrderData } from "@/lib/customHooks/usePrintOrderData";
+import { useWebSocketOrderUpdates } from "@/lib/customHooks/useWebSocketOrderUpdates";
 
 const tabs = [
   { id: "Review", label: "Cần xét duyệt", icon: <Eye /> },
@@ -27,77 +18,26 @@ const tabs = [
 export default function PrintOrderPage() {
   const [activeTab, setActiveTab] = useState("Review");
 
-  const [orderReviewList, setOrderReviewList] = useState<Order[]>([]);
-  const [orderAwaitList, setOrderAwaitList] = useState<Order[]>([]);
-  const [orderPrintingList, setOrderPringtingList] = useState<Order[]>([]);
-  const [orderSuccessList, setOrderSuccessList] = useState<Order[]>([]);
+  // Use custom hooks for order management
+  const reviewTab = useOrderTab(["REVIEW", "PRINT_REQUEST_FAIL"]);
+  const awaitTab = useOrderTab(["AWAITING"]);
+  const printingTab = useOrderTab(["PRINTED"]);
+  const successTab = useOrderTab(["PRINT_REQUEST_SUCCESS", "PRINT_CANCEL", "USER_PRINT"], "create_print_time");
+  const printRequestTab = useOrderTab(["PRINT_REQUEST"]);
 
-  // loading state riêng cho từng tab
-  const [isLoadingReview, setIsLoadingReview] = useState<boolean>(false);
-  const [pageReview, setPageReview] = useState<number>(0);
-  const [hasMoreReview, setHasMoreReview] = useState<boolean>(true);
-  const [orderPrintRequestList, setOrderPrintRequestList] = useState<Order[]>([]);
+  // Use custom hook for shared data
+  const printOrderData = usePrintOrderData();
 
-  const [isLoadingAwait, setIsLoadingAwait] = useState<boolean>(false);
-  const [pageAwait, setPageAwait] = useState<number>(0);
-  const [hasMoreAwait, setHasMoreAwait] = useState<boolean>(true);
-
-  const [isLoadingPrinting, setIsLoadingPrinting] = useState<boolean>(false);
-  const [pagePrinting, setPagePrinting] = useState<number>(0);
-  const [hasMorePrinting, setHasMorePrinting] = useState<boolean>(true);
-
-  const [isLoadingPrintSuccess, setIsLoadingSuccess] = useState<boolean>(false);
-  const [pageSuccess, setPageSuccess] = useState<number>(0);
-  const [hasMoreSuccess, setHasMoreSuccess] = useState<boolean>(true);
-
-  const [isLoadingPrintRequest, setIsLoadingPrintRequest] = useState<boolean>(false);
-  const [pagePrintRequest, setPagePrintRequest] = useState<number>(0);
-  const [hasMorePrintRequest, setHasMorePrintRequest] = useState<boolean>(true);
-
-  const wsClient = useWebSocket();
-
-  const { data: printersResponse } = usePrinters();
-  const { data: variationsPrinteesHubResponse } = useFetch<CategoryPrintPrinteesHub[]>({
-    fetcher: getVariationsPrinteesHub,
-    key: "variations-printeesHub"
-  });
-
-  const { data: SkuMPKRespoonse } = useFetch<SKUMPK[]>({
-    fetcher: fetchSkuMKP,
-    key: "variations-mpk"
-  });
-
-  const { data: productMenPrintResponse } = useFetch<MenPrintData<ProductMenPrint>>({
-    fetcher: getVariationsMenPrint,
-    key: "variations-menPrint"
-  });
-
-  const { data: printShippingMethod } = useFetch<ApiResponse<PrintShippMethod[]>>({
-    fetcher: getPrintShippingMethod,
-    key: "print-shipping-method"
-  });
-
-
-  const printers: PrintShop[] = printersResponse?.result ?? [];
-  const skumpk: SKUMPK[] = SkuMPKRespoonse || [];
-  const variationsPrinteesHub: CategoryPrintPrinteesHub[] = variationsPrinteesHubResponse ?? [];
-  const productMenPrint: ProductMenPrint[] = productMenPrintResponse?.data ?? [];
-  const printShippingMethods: PrintShippMethod[] = printShippingMethod?.result ?? [];
-
+  // Initialize data loading
   useEffect(() => {
     const loadData = async () => {
       try {
-        setIsLoadingReview(true);
-        setIsLoadingAwait(true);
-        setIsLoadingPrinting(true);
-        setIsLoadingSuccess(true)
-        setIsLoadingPrintRequest(true)
         await Promise.all([
-          loadOrderReview(), 
-          loadOrderAwait(), 
-          loadOrderPringting(), 
-          loadOrderSuccess(),
-          loadOrderPrintRequest()
+          reviewTab.actions.loadOrders(),
+          awaitTab.actions.loadOrders(),
+          printingTab.actions.loadOrders(),
+          successTab.actions.loadOrders(),
+          printRequestTab.actions.loadOrders()
         ]);
       } catch (err) {
         console.error("Error loading orders:", err);
@@ -106,257 +46,136 @@ export default function PrintOrderPage() {
     loadData();
   }, []);
 
+  // Setup WebSocket updates
+  useWebSocketOrderUpdates({
+    reviewActions: reviewTab.actions,
+    awaitActions: awaitTab.actions,
+    printingActions: printingTab.actions,
+    successActions: successTab.actions,
+    printRequestActions: printRequestTab.actions,
+  });
 
-  const loadMoreRevew = async () => {
-    if (!hasMoreReview) return;
-    await loadOrderReview(pageReview + 1, true)
-  }
-  const loadOrderReview = async (pageInput = 0, append = false) => {
-    try {
-      const responseReview = await getOrderCantPrint({ printStatus: ["REVIEW", "PRINT_REQUEST_FAIL"], page: pageInput });
-      const newOrders: Order[] = responseReview.result.data;
-      if (!append) {
-        setOrderReviewList(newOrders)
-      } else {
-        setOrderReviewList((prev) => {
-          const map = new Map<string, Order>();
-          [...prev, ...newOrders].forEach((o) => map.set(o.id, o));
-          return Array.from(map.values()).sort((a, b) => b.create_time - a.create_time);
-        });
-
-      }
-      setPageReview(responseReview.result.current_page ?? 0);
-      const isLast = responseReview?.result?.last ?? true;
-      setHasMoreReview(!isLast);
-    } catch (e: any) {
-      alert(e?.message || "Fail load Review orders");
-    } finally {
-      setIsLoadingReview(false);
-    }
-  };
-
-  const loadMoreAwait = async () => {
-    if (!hasMoreAwait) return;
-    await loadOrderAwait(pageAwait + 1, true)
-  }
-  const loadOrderAwait = async (pageInput = 0, append = false) => {
-    try {
-      const responseAwait = await getOrderCantPrint({ printStatus: ["AWAITING"], page: pageInput });
-      const newOrders: Order[] = responseAwait.result.data;
-      if (!append) {
-        setOrderAwaitList(newOrders)
-      } else {
-        setOrderAwaitList((prev) => {
-          const map = new Map<string, Order>();
-          [...prev, ...newOrders].forEach((o) => map.set(o.id, o));
-          return Array.from(map.values()).sort((a, b) => b.create_time - a.create_time);
-        });
-      }
-      setPageAwait(responseAwait.result.current_page ?? 0);
-      const isLast = responseAwait?.result?.last ?? true;
-      setHasMoreAwait(!isLast);
-    } catch (e: any) {
-      alert(e?.message || "Fail load Await orders");
-    } finally {
-      setIsLoadingAwait(false);
-    }
-  };
-
-  const loadMorePringting = async () => {
-    if (!hasMorePrinting) return;
-    await loadOrderPringting(pagePrinting + 1, true)
-  }
-  const loadOrderPringting = async (pageInput = 0, append = false) => {
-    try {
-      const responsePringting = await getOrderCantPrint({ printStatus: ["PRINTED"], page: pageInput });
-      const newOrders: Order[] = responsePringting.result.data;
-      if (!append) {
-        setOrderPringtingList(newOrders)
-      } else {
-        setOrderPringtingList((prev) => {
-          const map = new Map<string, Order>();
-          [...prev, ...newOrders].forEach((o) => map.set(o.id, o));
-          return Array.from(map.values()).sort((a, b) => b.create_time - a.create_time);
-        });
-
-      }
-      setPagePrinting(responsePringting.result.current_page ?? 0);
-      const isLast = responsePringting?.result?.last ?? true;
-      setHasMorePrinting(!isLast);
-    } catch (e: any) {
-      alert(e?.message || "Fail load Await orders");
-    } finally {
-      setIsLoadingPrinting(false);
-    }
-  };
-
-  const loadMoreSuccess = async () => {
-    if (!hasMoreSuccess) return;
-    await loadOrderSuccess(pageSuccess + 1, true)
-  }
-  const loadOrderSuccess = async (pageInput = 0, append = false) => {
-    try {
-      const responsePringting = await getOrderCantPrint({ printStatus: ["PRINT_REQUEST_SUCCESS", "PRINT_CANCEL", "USER_PRINT"], page: pageInput });
-      const newOrders: Order[] = responsePringting.result.data;
-      if (!append) {
-        setOrderSuccessList(newOrders)
-      } else {
-        setOrderSuccessList((prev) => {
-          const map = new Map<string, Order>();
-          [...prev, ...newOrders].forEach((o) => map.set(o.id, o));
-          return Array.from(map.values()).sort((a, b) => b.create_print_time - a.create_print_time);
-        });
-
-      }
-      setPageSuccess(responsePringting.result.current_page ?? 0);
-      const isLast = responsePringting?.result?.last ?? true;
-      setHasMoreSuccess(!isLast);
-    } catch (e: any) {
-      alert(e?.message || "Fail load Await orders");
-    } finally {
-      setIsLoadingSuccess(false);
-    }
-  };
-
-
-  const loadMorePrintRequest = async () => {
-    if (!hasMorePrintRequest) return;
-    await loadOrderPrintRequest(pagePrintRequest + 1, true);
-  };
-
-  const loadOrderPrintRequest = async (pageInput = 0, append = false) => {
-    try {
-      const response = await getOrderCantPrint({ printStatus: ["PRINT_REQUEST"], page: pageInput });
-      const newOrders: Order[] = response.result.data;
-
-      if (!append) {
-        setOrderPrintRequestList(newOrders);
-      } else {
-        setOrderPrintRequestList((prev) => {
-          const map = new Map<string, Order>();
-          [...prev, ...newOrders].forEach((o) => map.set(o.id, o));
-          return Array.from(map.values()).sort((a, b) => b.create_time - a.create_time);
-        });
-      }
-
-      setPagePrintRequest(response.result.current_page ?? 0);
-      const isLast = response?.result?.last ?? true;
-      setHasMorePrintRequest(!isLast);
-    } catch (e: any) {
-      alert(e?.message || "Fail load PRINT_REQUEST orders");
-    } finally {
-      setIsLoadingPrintRequest(false);
-    }
-  };
-  const refreshData = async () => {
-    if (activeTab === "Review") {
-      setIsLoadingReview(true)
-      await loadOrderReview()
-    }
-    else if (activeTab === "AwaitDesign") {
-      setIsLoadingAwait(true)
-      await loadOrderAwait()
-    }
-    else if (activeTab === "Printing") {
-      setIsLoadingPrinting(true)
-      await loadOrderPringting()
-    } else if (activeTab === "OrderPrint") {
-      setIsLoadingSuccess(true)
-      await loadOrderSuccess()
-    } else if (activeTab === "PrintRequest") {
-      setIsLoadingPrintRequest(true);
-      await loadOrderPrintRequest();
-    }
-  }
-
-  // WebSocket effect
-  useEffect(() => {
-    const callback = (msg: IMessage) => {
-      const updated: Message<Order> = JSON.parse(msg.body);
-      if (updated.event === "UPDATE") {
-        const newOrder = updated.data;
-        console.log(newOrder)
-        if (newOrder.print_status === "REVIEW" || newOrder.print_status === "PRINT_REQUEST_FAIL" ) {
-          upsertOrderReview(newOrder)
-        } else if (newOrder.print_status === "AWAITING") {
-          upsertOrderAwait(newOrder);
-        } else if (newOrder.print_status === "PRINTED") {
-          upsertOrderPrinting(newOrder);
-        } else if(newOrder.print_status === "PRINT_REQUEST_SUCCESS" || newOrder.print_status === "PRINT_CANCEL" || newOrder.print_status === "USER_PRINT") {
-          upsertOrderSuccess(newOrder)
-        } else if (newOrder.print_status === "PRINT_REQUEST") {
-          upsertOrderPrintRequest(newOrder);
-        }
-      }
+  // Memoized refresh function
+  const refreshData = useCallback(async () => {
+    const tabActions = {
+      Review: reviewTab.actions.refreshOrders,
+      AwaitDesign: awaitTab.actions.refreshOrders,
+      Printing: printingTab.actions.refreshOrders,
+      OrderPrint: successTab.actions.refreshOrders,
+      PrintRequest: printRequestTab.actions.refreshOrders,
     };
-    wsClient.subscribe("/user/queue/orders", callback);
-    return () => {
-      wsClient.unsubscribe("/user/queue/orders");
+    
+    const refreshAction = tabActions[activeTab as keyof typeof tabActions];
+    if (refreshAction) {
+      await refreshAction();
+    }
+  }, [activeTab, reviewTab.actions, awaitTab.actions, printingTab.actions, successTab.actions, printRequestTab.actions]);
+
+  // Memoized tab content
+  const tabContent = useMemo(() => {
+    const commonProps = {
+      skuMPK: printOrderData.skuMPK,
+      printShippingMethods: printOrderData.printShippingMethods,
+      variationsPrinteesHub: printOrderData.variationsPrinteesHub,
+      productMenPrint: printOrderData.productMenPrint,
+      printers: printOrderData.printers,
+      productMangoTeePrint: printOrderData.productMangoTeePrint,
     };
-  }, [wsClient]);
 
-  const upsertOrderReview = (newOrder: Order) => {
-    setOrderReviewList(prevOrders => {
-      const exists = prevOrders.some(o => o.id === newOrder.id);
-      let updated = exists
-        ? prevOrders.map(o => (o.id === newOrder.id ? newOrder : o))
-        : [...prevOrders, newOrder];
-      return updated.sort((a, b) => b.create_time - a.create_time);
-    });
-  };
+    switch (activeTab) {
+      case "Review":
+        return (
+          <OrderTab
+            {...commonProps}
+            orderList={reviewTab.state.orders}
+            setOrderList={reviewTab.actions.setOrders}
+            isLoading={reviewTab.state.isLoading}
+            loadMore={reviewTab.actions.loadMore}
+            hasMore={reviewTab.state.hasMore}
+          />
+        );
+      case "AwaitDesign":
+        return (
+          <OrderTab
+            {...commonProps}
+            orderList={awaitTab.state.orders}
+            setOrderList={awaitTab.actions.setOrders}
+            isLoading={awaitTab.state.isLoading}
+            loadMore={awaitTab.actions.loadMore}
+            hasMore={awaitTab.state.hasMore}
+          />
+        );
+      case "Printing":
+        return (
+          <OrderTab
+            {...commonProps}
+            orderList={printingTab.state.orders}
+            setOrderList={printingTab.actions.setOrders}
+            isLoading={printingTab.state.isLoading}
+            loadMore={printingTab.actions.loadMore}
+            hasMore={printingTab.state.hasMore}
+          />
+        );
+      case "PrintRequest":
+        return (
+          <OrderTab
+            {...commonProps}
+            orderList={printRequestTab.state.orders}
+            setOrderList={printRequestTab.actions.setOrders}
+            isLoading={printRequestTab.state.isLoading}
+            loadMore={printRequestTab.actions.loadMore}
+            hasMore={printRequestTab.state.hasMore}
+          />
+        );
+      case "OrderPrint":
+        return (
+          <PrintSucc
+            orderSuccesList={successTab.state.orders}
+            setOrderSuccesList={successTab.actions.setOrders}
+            isLoading={successTab.state.isLoading}
+            loadMore={successTab.actions.loadMore}
+            hasMore={successTab.state.hasMore}
+          />
+        );
+      default:
+        return null;
+    }
+  }, [
+    activeTab,
+    printOrderData,
+    reviewTab.state,
+    reviewTab.actions,
+    awaitTab.state,
+    awaitTab.actions,
+    printingTab.state,
+    printingTab.actions,
+    printRequestTab.state,
+    printRequestTab.actions,
+    successTab.state,
+    successTab.actions,
+  ]);
 
-  const upsertOrderAwait = (newOrder: Order) => {
-    setOrderAwaitList(prevOrders => {
-      const exists = prevOrders.some(o => o.id === newOrder.id);
-      let updated = exists
-        ? prevOrders.map(o => (o.id === newOrder.id ? newOrder : o))
-        : [...prevOrders, newOrder];
-      return updated.sort((a, b) => b.create_time - a.create_time);
-    });
-  };
-
-  const upsertOrderPrinting = (newOrder: Order) => {
-    setOrderPringtingList(prevOrders => {
-      const exists = prevOrders.some(o => o.id === newOrder.id);
-      let updated = exists
-        ? prevOrders.map(o => (o.id === newOrder.id ? newOrder : o))
-        : [...prevOrders, newOrder];
-      return updated.sort((a, b) => b.create_time - a.create_time);
-    });
-  };
-
-  const upsertOrderSuccess = (newOrder: Order) => {
-    setOrderSuccessList(prevOrders => {
-      const exists = prevOrders.some(o => o.id === newOrder.id);
-      let updated = exists
-        ? prevOrders.map(o => (o.id === newOrder.id ? newOrder : o))
-        : [...prevOrders, newOrder];
-      return updated.sort((a, b) => b.create_time - a.create_time);
-    });
-    // remove khỏi print request list
-    setOrderPrintRequestList(prevOrders =>
-      prevOrders.filter(o => o.id !== newOrder.id)
-    );
-  };
-  const upsertOrderPrintRequest = (newOrder: Order) => {
-    setOrderPrintRequestList(prevOrders => {
-      const exists = prevOrders.some(o => o.id === newOrder.id);
-      let updated = exists
-        ? prevOrders.map(o => (o.id === newOrder.id ? newOrder : o))
-        : [...prevOrders, newOrder];
-      return updated.sort((a, b) => b.create_time - a.create_time);
-    });
-  };
+  // Memoized loading state for refresh button
+  const isRefreshing = useMemo(() => {
+    const loadingStates = {
+      Review: reviewTab.state.isLoading,
+      AwaitDesign: awaitTab.state.isLoading,
+      Printing: printingTab.state.isLoading,
+      OrderPrint: successTab.state.isLoading,
+      PrintRequest: printRequestTab.state.isLoading,
+    };
+    return loadingStates[activeTab as keyof typeof loadingStates] || false;
+  }, [activeTab, reviewTab.state.isLoading, awaitTab.state.isLoading, printingTab.state.isLoading, successTab.state.isLoading, printRequestTab.state.isLoading]);
 
   return (
     <div className="bg-white px-6 py-2 shadow-lg h-[calc(100vh-56px)] flex flex-col">
       <div>
         <button
           onClick={refreshData}
-          disabled={isLoadingAwait || isLoadingReview}
+          disabled={isRefreshing}
           className="px-3 sticky top-0 py-1 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 flex items-center"
         >
-          {isLoadingAwait || isLoadingReview ? (
+          {isRefreshing ? (
             <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-4 h-4 mr-2"></span>
           ) : null}
           Làm mới
@@ -383,70 +202,7 @@ export default function PrintOrderPage() {
 
       {/* Tab Content */}
       <div className="transition-all duration-200 ease-in-out flex-1 overflow-y-auto">
-        {activeTab === "Review" && (
-          <ReviewPrint
-            skuMPK={skumpk}
-            printShippingMethods = {printShippingMethods}
-            hasMore={hasMoreReview}
-            loadMore={loadMoreRevew}
-            isLoading={isLoadingReview}
-            orderReviewList={orderReviewList}
-            setOrderReviewList={setOrderReviewList}
-            variationsPrinteesHub={variationsPrinteesHub}
-            productMenPrint={productMenPrint}
-            printers={printers}
-          />
-        )}
-        {activeTab === "AwaitDesign" && (
-          <AwaitDesign
-            skuMPK={skumpk}
-            printShippingMethods = {printShippingMethods}
-            hasMore={hasMoreAwait}
-            loadMore={loadMoreAwait}
-            isLoading={isLoadingAwait}
-            orderAwaitList={orderAwaitList}
-            setOrderAwaitList={setOrderAwaitList}
-            variationsPrinteesHub={variationsPrinteesHub}
-            productMenPrint={productMenPrint}
-            printers={printers}
-          />
-        )}
-        {activeTab === "Printing" && 
-          <Printing
-              skuMPK={skumpk}
-              printShippingMethods = {printShippingMethods}
-              hasMore={hasMorePrinting}
-              loadMore={loadMorePringting}
-              isLoading={isLoadingPrinting}
-              orderReviewList={orderPrintingList}
-              setOrderReviewList={setOrderPringtingList}
-              variationsPrinteesHub={variationsPrinteesHub}
-              productMenPrint={productMenPrint}
-              printers={printers}
-         />}
-         {activeTab === "OrderPrint" && 
-          <PrintSucc
-              hasMore={hasMoreSuccess}
-              loadMore={loadMoreSuccess}
-              isLoading={isLoadingPrintSuccess}
-              orderSuccesList={orderSuccessList}
-              setOrderSuccesList={setOrderSuccessList}
-         />}
-
-        {activeTab === "PrintRequest" && (
-          <Printing
-            skuMPK={skumpk}
-            printShippingMethods={printShippingMethods}
-            hasMore={hasMorePrintRequest}
-            loadMore={loadMorePrintRequest}
-            isLoading={isLoadingPrintRequest}
-            orderReviewList={orderPrintRequestList}
-            setOrderReviewList={setOrderPrintRequestList}
-            variationsPrinteesHub={variationsPrinteesHub}
-            productMenPrint={productMenPrint}
-            printers={printers}
-          />
-        )}
+        {tabContent}
       </div>
     </div>
   );

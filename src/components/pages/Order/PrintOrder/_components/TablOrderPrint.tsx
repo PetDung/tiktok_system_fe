@@ -1,18 +1,16 @@
 "use client";
 
 import { formatDate, Order, PrintShop } from "@/service/types/ApiResponse";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, memo, useCallback } from "react";
 import OrderItemModalView from "./OrderItemModalView";
-import { CategoryPrintPrinteesHub, ProductMenPrint } from "@/service/print-order/getSKU";
+import { CategoryPrintPrinteesHub, MangoTeePrintProduct, ProductMenPrint } from "@/service/print-order/getSKU";
 import OptionalSelect, { Option } from "@/components/UI/OptionalSelect";
 import { changePrinterStatus, changePrinterStatusBatch, updatePrinterOrder, updatePrintShippMethod } from "@/service/order/order-service";
 import { PrintShippMethod } from "@/service/types/PrintOrder";
 import LoadingOverlay from "@/components/UI/LoadingOverlay";
 import { SKUMPK } from "@/service/print-order/data";
-import { set } from 'lodash';
-import InputAlert, { showInputAlert } from "./InputAlert";
+import { showInputAlert } from "./InputAlert";
 import { synchronizePrintOrder } from './../../../../../service/print-order/print-order-service';
-import { SynchronizePrintOrderParam } from '@/service/print-order/print-order-service';
 
 export type OrderWithFlag = Order & { _isRemoving?: boolean };
 
@@ -24,6 +22,7 @@ type Props = {
     setOrder: React.Dispatch<React.SetStateAction<Order[]>>;
     printShippingMethods: PrintShippMethod[],
     skuMPK: SKUMPK[]
+    productMangoTeePrint : MangoTeePrintProduct[]
 };
 
 export type Attribute = {
@@ -49,13 +48,14 @@ export const optionsChangeStatus: Option[] =
         { label: "Đã đặt in", value: "PRINT_REQUEST_SUCCESS", hidden: true },
         { label: "Tự đặt in", value: "USER_PRINT" },
     ]
-export default function TablOrderPrint({
+const TablOrderPrint = memo(function TablOrderPrint({
     orderList,
     variationsPrinteesHub,
     productMenPrint,
     printers,
     setOrder,
     printShippingMethods,
+    productMangoTeePrint,
     skuMPK
 }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -99,6 +99,15 @@ export default function TablOrderPrint({
             level: 0
         }))
 
+        const attriuteMangoTeePrint: Attribute[] = productMangoTeePrint.map(item => ({
+            name: item.name,
+            printOrigin: "MG",
+            key: item.id,
+            level: 0
+        }))
+
+        console.log(attriuteMangoTeePrint);
+
         return {
             MP: {
                 attribute: attributeMenPrint,
@@ -115,8 +124,13 @@ export default function TablOrderPrint({
                 orderOrigin: skuMPK,
                 code: "MKP",
             },
+            MG: {
+                attribute: attriuteMangoTeePrint,
+                orderOrigin: productMangoTeePrint,
+                code: "MG",
+            }
         };
-    }, [variationsPrinteesHub, productMenPrint, skuMPK]);
+    }, [variationsPrinteesHub, productMenPrint, skuMPK, productMangoTeePrint]);
 
     const optionPrint: Option[] = useMemo(() => {
         return printers.map((item) => ({
@@ -141,7 +155,7 @@ export default function TablOrderPrint({
         return map;
     }, [printShippingMethods]);
 
-    const updatePrinter = async (orderId: string, printerId: string | null) => {
+    const updatePrinter = useCallback(async (orderId: string, printerId: string | null) => {
         try {
             const finalPrinterId = !printerId ? "REMOVE" : printerId;
             const response = await updatePrinterOrder(orderId, finalPrinterId);
@@ -151,8 +165,9 @@ export default function TablOrderPrint({
             console.error("Update printer error:", e);
             alert(e.message || "Lỗi khi cập nhật máy in");
         }
-    };
-    const handlUpdatePrintShippingMethod = async (orderId: string, medthod: string | null) => {
+    }, []);
+
+    const handlUpdatePrintShippingMethod = useCallback(async (orderId: string, medthod: string | null) => {
         try {
             const response = await updatePrintShippMethod(orderId, medthod)
             const newOrder = response.result;
@@ -161,13 +176,14 @@ export default function TablOrderPrint({
             console.error("Update printer error:", e);
             alert(e.message || "Lỗi khi cập nhật máy in");
         }
-    };
-    const handleClickOrder = (order: Order) => {
+    }, []);
+
+    const handleClickOrder = useCallback((order: Order) => {
         setIsModalOpen(true);
         setOrderSelect(order);
         if (!order.printer) setAttribute(null);
         else setAttribute(attributeMap[order.printer.code]);
-    };
+    }, [attributeMap]);
 
     const changStausOrderPrint = async (order: Order | null, status: string | null) => {
         if (!order || !status) return;
@@ -477,4 +493,6 @@ export default function TablOrderPrint({
             <LoadingOverlay show={loadingOverlay} />
         </div>
     );
-}
+});
+
+export default TablOrderPrint;

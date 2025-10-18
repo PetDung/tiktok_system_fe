@@ -1,5 +1,6 @@
 "use client"
 
+import { memo, useCallback } from "react";
 import { Order } from "@/service/types/ApiResponse";
 import LoadingIndicator from "@/components/UI/LoadingIndicator";
 import OrderPrintSuccessCard from "./OrderPrintSuccessCard";
@@ -18,7 +19,7 @@ type Props = {
     hasMore: boolean;
 }
 
-export default function PrintSucc(
+const PrintSucc = memo(function PrintSucc(
     {
         orderSuccesList,
         setOrderSuccesList,
@@ -26,7 +27,9 @@ export default function PrintSucc(
         hasMore,
     }: Props) {
 
-    const cancel = async (order: Order) => {
+    const [loadingOverlay, setLoadingOverLay] = useState<boolean>(false);
+
+    const cancel = useCallback(async (order: Order) => {
         const confirmed = await showConfirmAlert({
             title: "Xóa mục",
             message: "Hành động này không thể hoàn tác. Bạn có chắc chắn?",
@@ -48,11 +51,9 @@ export default function PrintSucc(
         }finally{
             setLoadingOverLay(false)
         }
-    }
+    }, []);
 
-    const [loadingOverlay, setLoadingOverLay] = useState<boolean>(false);
-
-    const changStausOrderPrint = async (order: Order | null, status: string | null) => {
+    const changStausOrderPrint = useCallback(async (order: Order | null, status: string | null) => {
         if(!order) return;
         if(order.print_status === status) return;
         if (status === "PRINTED" || status === "PRINT_REQUEST") {
@@ -93,15 +94,16 @@ export default function PrintSucc(
         }finally{
             setLoadingOverLay(false)
         }
-    };
+    }, []);
 
 
-    const updateAOrder = (newOrder: Order) => {
+    const updateAOrder = useCallback((newOrder: Order) => {
         setOrderSuccesList((prevOrders) =>
             prevOrders.map((o) => (o.id === newOrder.id ? newOrder : o))
         );
-    };
-    const removeAOrder = (orderId: string) => {
+    }, [setOrderSuccesList]);
+
+    const removeAOrder = useCallback((orderId: string) => {
         // Gắn flag để animate trước khi xóa
         setOrderSuccesList((prevOrders: any) =>
             prevOrders.map((o: any) =>
@@ -112,7 +114,7 @@ export default function PrintSucc(
         setTimeout(() => {
             setOrderSuccesList((prevOrders: any) => prevOrders.filter((o: any) => o.id !== orderId));
         }, 300);
-    };
+    }, [setOrderSuccesList]);
     return (
         <div>
 
@@ -131,4 +133,6 @@ export default function PrintSucc(
             <LoadingOverlay show= {loadingOverlay}/>
         </div>
     );
-}
+});
+
+export default PrintSucc;

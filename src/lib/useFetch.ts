@@ -5,6 +5,7 @@ interface UseFetchOptions<T, P = any> {
   fetcher: (param?: P) => Promise<T>;
   key: string;
   param?: P;
+  enabled?: boolean;
   revalidateOnFocus?: boolean;
   revalidateOnReconnect?: boolean;
   refreshInterval?: number;
@@ -14,6 +15,7 @@ export function useFetch<T = any, P = any>({
   fetcher,
   key,
   param,
+  enabled = true,
   revalidateOnFocus = true,
   revalidateOnReconnect = true,
   refreshInterval,
@@ -27,7 +29,7 @@ export function useFetch<T = any, P = any>({
     error,
     isLoading,
     mutate: swrMutate,
-  } = useSWR<T>(swrKey, () => fetcher(param), {
+  } = useSWR<T>(enabled ? swrKey : null, () => fetcher(param), {
     revalidateOnFocus,
     revalidateOnReconnect,
     refreshInterval,
