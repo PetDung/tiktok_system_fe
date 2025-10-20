@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const product_id = req.nextUrl.searchParams.get("product_id") || 1;
     const response = 
       await axios.get(
-        `https://v3.mangoteeprints.com/api/public/v1/products/${product_id}/variations?&limit=100&page=${page}`,
+        `https://v3.mangoteeprints.com/api/public/v1/products/${product_id}/variations?&limit=100&page=${page}&production_line_id=88c48353-11a1-403d-802d-0c583ca2a715`,
      {
       headers: {
         "X-API-Key":process.env.MANGOTEE_TOKEN,
