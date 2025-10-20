@@ -74,6 +74,8 @@ const OrderItemCard = memo(function OrderItemCard({
                 return Array.from(new Set(skuMenPrint.map(item => item.color)));
             }
             case "MG": {
+                const value =  Array.from(new Set(skuMango.map(item => item.color)));
+                console.log(skuMango);
                 return Array.from(new Set(skuMango.map(item => item.color)));
             }
             case "MKP": {
@@ -114,13 +116,15 @@ const OrderItemCard = memo(function OrderItemCard({
                 );
             }
             case "MG": {
-                return Array.from(
+                const value = Array.from(
                     new Set(
                         skuMango
                             .filter((v: MangoTeePrintSKU) => v.color === optionSelect.color)
                             .map((v: MangoTeePrintSKU) => v.size)
                     )
                 );
+                console.log(value)
+                return value;
             }
             case "MKP": {
                 const orderOrigin = attribute.orderOrigin as SKUMPK[];

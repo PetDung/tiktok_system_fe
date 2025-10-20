@@ -191,7 +191,7 @@ export const getMangoTeeProduct = async (): Promise<MangoTeePrintProduct[]> => {
       allData = [...allData, ...data.data.items];
 
       // nếu đã lấy đủ (vd: count <= page * limit) thì dừng
-      if (allData.length = data.data.pagination.total) {
+      if (allData.length === data.data.pagination.total) {
         break;
       }
 
@@ -220,19 +220,25 @@ export const getSkuMongoTeePrint = async (prouduct_id: string): Promise<MangoTee
     let allData: MangoTeePrintSKU[] = []
 
     while (true) {
+      console.log(page)
       const res = await fetch(`/api/variations/mangoteeprints/sku?page=${page}&product_id=${prouduct_id}`);
       if (!res.ok) throw new Error("Failed to fetch sku variations");
 
       const data: MangoTeeData<MangoTeeVariations> = await res.json();
-      if(!data.data) break;
+      if(!data.data){
+        console.log(res);
+        console.log("end data")
+        break;
+      }
 
       allData = [...allData, ...data.data.items];
 
       // nếu đã hết trang thì dừng
-      if (allData.length = data.data.pagination.total) {
+      if (allData.length === data.data.pagination.total) {
+        console.log(res);
+        console.log("end total")
         break;
       }
-
       page++;
     }
     return allData

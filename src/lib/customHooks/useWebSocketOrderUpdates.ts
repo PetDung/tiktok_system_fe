@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useWebSocket } from '@/Context/WebSocketContext';
 import { IMessage } from '@stomp/stompjs';
 import { Order } from '@/service/types/ApiResponse';
@@ -26,43 +26,65 @@ export function useWebSocketOrderUpdates({
 }: WebSocketOrderUpdatesProps) {
   const wsClient = useWebSocket();
 
-  const handleWebSocketMessage = useCallback((msg: IMessage) => {
-    const updated: Message<Order> = JSON.parse(msg.body);
-    if (updated.event === "UPDATE") {
-      const newOrder = updated.data;
-      console.log('WebSocket order update:', newOrder);
+  // Use ref to hold stable reference to actions
+  const actionsRef = useRef<WebSocketOrderUpdatesProps>({
+    reviewActions,
+    awaitActions,
+    printingActions,
+    successActions,
+    printRequestActions,
+  });
 
-      switch (newOrder.print_status) {
-        case "REVIEW":
-        case "PRINT_REQUEST_FAIL":
-          reviewActions.upsertOrder(newOrder);
-          break;
-        case "AWAITING":
-          awaitActions.upsertOrder(newOrder);
-          break;
-        case "PRINTED":
-          printingActions.upsertOrder(newOrder);
-          break;
-        case "PRINT_REQUEST_SUCCESS":
-        case "PRINT_CANCEL":
-        case "USER_PRINT":
-          successActions.upsertOrder(newOrder);
-          // Remove from print request list when moving to success
-          printRequestActions.removeOrder(newOrder.id);
-          break;
-        case "PRINT_REQUEST":
-          printRequestActions.upsertOrder(newOrder);
-          break;
-        default:
-          console.warn('Unknown print status:', newOrder.print_status);
-      }
-    }
+  // Always update ref with latest actions
+  useEffect(() => {
+    actionsRef.current = { reviewActions, awaitActions, printingActions, successActions, printRequestActions };
   }, [reviewActions, awaitActions, printingActions, successActions, printRequestActions]);
 
+  // Handle incoming WebSocket messages
   useEffect(() => {
-    wsClient.subscribe("/user/queue/orders", handleWebSocketMessage);
-    return () => {
-      wsClient.unsubscribe("/user/queue/orders");
+    const handleWebSocketMessage = (msg: IMessage) => {
+      try {
+        const updated: Message<Order> = JSON.parse(msg.body);
+
+        if (updated.event === 'UPDATE') {
+          const newOrder = updated.data;
+          console.log('WebSocket order update:', newOrder);
+
+          switch (newOrder.print_status) {
+            case 'REVIEW':
+            case 'PRINT_REQUEST_FAIL':
+              actionsRef.current.reviewActions.upsertOrder(newOrder);
+              break;
+            case 'AWAITING':
+              actionsRef.current.awaitActions.upsertOrder(newOrder);
+              break;
+            case 'PRINTED':
+              actionsRef.current.printingActions.upsertOrder(newOrder);
+              break;
+            case 'PRINT_REQUEST_SUCCESS':
+            case 'PRINT_CANCEL':
+            case 'USER_PRINT':
+              actionsRef.current.successActions.upsertOrder(newOrder);
+              actionsRef.current.printRequestActions.removeOrder(newOrder.id);
+              break;
+            case 'PRINT_REQUEST':
+              actionsRef.current.printRequestActions.upsertOrder(newOrder);
+              break;
+            default:
+              console.warn('Unknown print status:', newOrder.print_status);
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error, msg);
+      }
     };
-  }, [wsClient, handleWebSocketMessage]);
+
+    // Subscribe once
+    wsClient.subscribe('/user/queue/orders', handleWebSocketMessage);
+
+    // Cleanup on unmount
+    return () => {
+      wsClient.unsubscribe('/user/queue/orders');
+    };
+  }, [wsClient]); // dependency chỉ chứa wsClient → subscribe 1 lần
 }
