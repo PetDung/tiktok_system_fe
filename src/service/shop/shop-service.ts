@@ -4,7 +4,7 @@ import axios from "axios";
 
 export const getMyShop = async () => {
   try {
-    const response = await axiosClient.get<ShopResponseData>("/shop/");
+    const response = await axiosClient.get<ShopResponseData>("/shop");
     if (response.data.code === 1000) {
       return response.data; // Assuming the shop data is in the 'data' field
     }

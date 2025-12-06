@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import LoadingIndicator from "@/components/UI/LoadingIndicator";
 import { useWebSocketOrderTotal } from "@/lib/customHooks/useWebSocketTotalOrder";
 import {ShopResponse} from "@/service/types/ApiResponse";
-import {getMyShopWithTotalOrder} from "@/service/shop/shop-service";
+import {getMyShop} from "@/service/shop/shop-service";
 
 export type TotalOrder = {
     shopId: string;
@@ -24,7 +24,7 @@ export const SelectShopView = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await getMyShopWithTotalOrder()
+            const res = await getMyShop()
             setShops(
                 (res.result ?? []).sort(
                     (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
