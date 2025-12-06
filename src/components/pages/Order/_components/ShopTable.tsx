@@ -5,9 +5,10 @@ export type ShopTableProps = {
   data: ShopResponse[];
   onShopClick: (shopId: string) => void;
   onRefresh?: () => void;
+  totalMap?: Map<string, number>;
 };
 
-const ShopTable = memo(({ data, onShopClick, onRefresh }: ShopTableProps) => {
+const ShopTable = memo(({ data, onShopClick, onRefresh, totalMap }: ShopTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState<keyof ShopResponse | "">("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -58,20 +59,6 @@ const ShopTable = memo(({ data, onShopClick, onRefresh }: ShopTableProps) => {
     } else {
       setSortField(field);
       setSortDirection("asc");
-    }
-  };
-
-  const formatDate = (dateString: Date) => {
-    try {
-      return new Date(dateString).toLocaleDateString("vi-VN", {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return dateString;
     }
   };
 
@@ -186,15 +173,13 @@ const ShopTable = memo(({ data, onShopClick, onRefresh }: ShopTableProps) => {
                     <SortIcon field="userShopName" />
                   </div>
                 </th>
-                {/* <th 
+                  <th
                   className="px-4 py-3 text-left font-medium text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => handleSort("createdAt")}
                 >
                   <div className="flex items-center gap-2">
-                    Ngày tạo
-                    <SortIcon field="createdAt" />
+                    Số đơn hàng
                   </div>
-                </th> */}
+                </th>
                 <th className="px-4 py-3 text-center font-medium text-gray-700">Action</th>
               </tr>
             </thead>
@@ -209,9 +194,11 @@ const ShopTable = memo(({ data, onShopClick, onRefresh }: ShopTableProps) => {
                     <td className="px-4 py-3">
                       <div className="text-gray-700">{shop.userShopName}</div>
                     </td>
-                    {/* <td className="px-4 py-3 text-gray-600">
-                      {formatDate(shop.createdAt)}
-                    </td> */}
+                    <td className="px-4 py-3 text-gray-600">
+                          {totalMap?.get(shop.id) ?? (
+                              <span className="text-gray-400 animate-pulse">Đang tải...</span>
+                          )}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => onShopClick(shop.id)}

@@ -5,7 +5,7 @@ import { useState } from "react";
 
 type HeaderProps = {
   collapsed: boolean;
-  setCollapsed: (value: boolean) => void;
+    setCollapsed: (value: boolean) => void;
   isMobile: boolean;
   sidebarOpen: boolean;
 };
