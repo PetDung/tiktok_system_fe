@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Edit2, Trash2 } from "lucide-react";
 import { ShopResponse } from "@/service/types/ApiResponse";
-import { updateUserNameShop } from "@/service/shop/shop-service";
+import {deleteShop, updateUserNameShop} from "@/service/shop/shop-service";
 
 type Props = {
   shop: ShopResponse;
@@ -34,7 +34,7 @@ export default function ShopRow({ shop, index, setShops }: Props) {
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this shop?")) return;
     try {
-      await fetch(`/api/shops/${shop.id}`, { method: "DELETE" });
+      await deleteShop(shop.id);
       setShops((prev) => prev.filter((s) => s.id !== shop.id));
     } catch (err) {
       console.error(err);
